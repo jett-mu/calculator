@@ -29,7 +29,6 @@
   --hl-ink: oklch(0.22 0.03 262);
   --err: oklch(0.52 0.19 27);
   --err-bg: oklch(0.95 0.03 27);
-  --eq: oklch(0.52 0.1 188); --eq-bg: oklch(0.93 0.035 188); --eq-ink: oklch(0.99 0 0);
   --tag-paren: #f3e3ff; --tag-paren-ink: #6b2fa3;
   --tag-pow: #dcf3f1;   --tag-pow-ink: #0f6b65;
   --g1: #2a4bb8; --g2: #d0453a; --g3: #1d8a4a; --g4: #9a3fc4; --g5: #c77a0a;
@@ -39,7 +38,6 @@
   --tag-frac: #fff0dc;  --tag-frac-ink: #a3570b;
   /* The display is a dark slate in both themes: the one thing on screen that is always the answer. */
   --disp: oklch(0.24 0.04 263);
-  --disp-eqm: oklch(0.27 0.05 200);
   --disp-ink: oklch(0.975 0.006 258);
   --disp-muted: oklch(0.76 0.03 258);
   --disp-line: oklch(0.36 0.04 262);
@@ -63,7 +61,6 @@
     --accent: oklch(0.72 0.14 254); --accent-ink: oklch(0.16 0.03 262);
     --hl: oklch(0.5 0.1 90 / .55); --hl-ink: oklch(0.98 0.03 95);
     --err: oklch(0.78 0.12 27); --err-bg: oklch(0.29 0.06 27);
-    --eq: oklch(0.8 0.11 185); --eq-bg: oklch(0.29 0.05 190); --eq-ink: oklch(0.17 0.03 200);
     --tag-paren: #34234a; --tag-paren-ink: #dcb8ff;
     --tag-pow: #173a38;   --tag-pow-ink: #8fe0d8;
     --g1: #7f9bff; --g2: #ff7f73; --g3: #5fd690; --g4: #cf8cff; --g5: #ffb547;
@@ -71,7 +68,7 @@
     --tag-md: #25305a;    --tag-md-ink: #b4c4ff;
     --tag-as: #1d3a28;    --tag-as-ink: #9de0b1;
     --tag-frac: #3d2c17;  --tag-frac-ink: #ffcb8a;
-    --disp: oklch(0.125 0.022 263); --disp-eqm: oklch(0.17 0.04 200);
+    --disp: oklch(0.125 0.022 263);
     --disp-line: oklch(0.25 0.025 262); --disp-fn: oklch(0.22 0.025 262);
     color-scheme: dark;
   }
@@ -85,7 +82,6 @@
   --accent: oklch(0.72 0.14 254); --accent-ink: oklch(0.16 0.03 262);
   --hl: oklch(0.5 0.1 90 / .55); --hl-ink: oklch(0.98 0.03 95);
   --err: oklch(0.78 0.12 27); --err-bg: oklch(0.29 0.06 27);
-  --eq: oklch(0.8 0.11 185); --eq-bg: oklch(0.29 0.05 190); --eq-ink: oklch(0.17 0.03 200);
   --tag-paren: #34234a; --tag-paren-ink: #dcb8ff;
   --tag-pow: #173a38;   --tag-pow-ink: #8fe0d8;
   --g1: #7f9bff; --g2: #ff7f73; --g3: #5fd690; --g4: #cf8cff; --g5: #ffb547;
@@ -93,7 +89,7 @@
   --tag-md: #25305a;    --tag-md-ink: #b4c4ff;
   --tag-as: #1d3a28;    --tag-as-ink: #9de0b1;
   --tag-frac: #3d2c17;  --tag-frac-ink: #ffcb8a;
-  --disp: oklch(0.125 0.022 263); --disp-eqm: oklch(0.17 0.04 200);
+  --disp: oklch(0.125 0.022 263);
   --disp-line: oklch(0.25 0.025 262); --disp-fn: oklch(0.22 0.025 262);
   color-scheme: dark;
 }
@@ -254,16 +250,6 @@ kbd {
 }
 @keyframes blink { 50% { opacity: 0; } }
 
-/* Equation mode (X H): the slate turns teal, so it's obvious that = and y type into the expression. */
-.eqm .display { --disp: var(--disp-eqm); --accent: var(--disp-eq); }
-.mode.eqchip { background: var(--disp-eq); color: var(--disp-eqm); letter-spacing: .01em; }
-.mode.eqchip[hidden] { display: none; }
-.eqm .ch.eqch { color: var(--disp-eq); font-weight: 700; }
-.eqm .k[data-act="equals"] { background: var(--eq-bg); color: var(--eq); font-size: 34px; }
-.eqm .k[data-act="yvar"] { background: var(--eq-bg); color: var(--eq); outline: 1.5px solid var(--eq); outline-offset: -1.5px; }
-.k[data-act="eqmode"].on { background: var(--eq); color: var(--eq-ink); }
-.k[data-act="eqmode"].on small, .k[data-act="eqmode"].on .kb { color: var(--eq-ink); }
-
 /* A key that does nothing on its own ([) is waiting for the rest of its shortcut: the slate is ringed. */
 .display.seq-wait { outline-color: var(--disp-err); }
 
@@ -302,7 +288,7 @@ kbd {
 .box { display: inline-block; width: .62em; height: .62em; border: 1.5px solid currentColor; border-radius: 3px; vertical-align: middle; }
 .box.big { width: .8em; height: .9em; margin-right: 1px; }
 .k.wide { grid-column: span 2; }
-.sci { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; margin-top: 16px; }
+.sci { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 16px; }
 .k.on { background: var(--accent); color: var(--accent-ink); }
 .k.on small, .k.on .kb { color: var(--accent-ink); }
 .k.dim { opacity: .4; }
@@ -315,7 +301,6 @@ kbd {
 .graph-fn { display: flex; align-items: center; gap: 8px; white-space: nowrap; overflow-x: auto; }
 .graph-fn { cursor: pointer; border-radius: 10px; padding: 3px 8px; margin: 0 -8px; transition: background-color .15s; }
 .graph-fn.sel { background: var(--fn); }
-.graph-si { color: var(--muted); font-size: .85em; margin-left: .9em; }
 .graph-fn .sw { width: 16px; height: 4px; border-radius: 2px; flex: none; }
 .graph-fn button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0 4px; }
 .graph-btns { display: flex; gap: 6px; flex: none; }
@@ -336,7 +321,6 @@ kbd {
 .sci .k:hover { background: color-mix(in oklch, var(--key-fn), var(--ink) 6%); }
 .sci .k:active, .sci .k.pressed { background: color-mix(in oklch, var(--key-fn), var(--ink) 12%); }
 .sci .k.on { background: var(--accent); }
-.sci .k[data-act="eqmode"].on { background: var(--eq); }
 .sci .k .kb { top: 5px; right: 8px; }
 .sci + .pad { margin-top: 10px; }
 .k .stack b { font-size: 13px; font-weight: 700; }
@@ -511,7 +495,6 @@ kbd {
     <section class="display" aria-label="Calculator display">
       <div class="disp-top">
         <button type="button" class="mode" id="angleBadge" title="Degrees or radians (click to switch)"></button>
-        <button type="button" class="mode eqchip" id="eqChip" title="Equation mode is on (click to leave)" hidden>Equation mode</button>
         <span class="ans-line" id="ansLine"></span>
         <div class="seg" role="group" aria-label="Answer format">
           <button type="button" data-view="frac">Fraction</button>
@@ -1649,8 +1632,8 @@ function tokenize(arr) {
       }
     } else if (it.t === 'pi') {
       out.push({ k: 'pi' });
-    } else if (it.t === 'x' || it.t === 'y') {
-      out.push({ k: it.t });
+    } else if (it.t === 'x') {
+      out.push({ k: 'x' });
     }
   }
   return out;
@@ -1661,7 +1644,7 @@ function parseArr(arr) {
   let p = 0;
   const peek = () => t[p];
   const isOp = (tk, ...vs) => tk && tk.k === 'op' && vs.includes(tk.v);
-  const startsPrimary = tk => tk && ['num', 'ans', 'frac', 'mixed', 'root', 'fn', 'pi', 'x', 'y', '('].includes(tk.k);
+  const startsPrimary = tk => tk && ['num', 'ans', 'frac', 'mixed', 'root', 'fn', 'pi', 'x', '('].includes(tk.k);
 
   function expr() {
     let a = term();
@@ -1714,7 +1697,6 @@ function parseArr(arr) {
       }
       case 'pi': return { k: 'pi' };
       case 'x': return { k: 'x' };
-      case 'y': return { k: 'y' };
       case 'pow': throw new CalcError('An exponent needs a number in front of it.');
       case '(': {
         if (peek() && peek().k === ')') throw new CalcError('The parentheses ( ) are empty.');
@@ -1760,9 +1742,6 @@ function norm(n, notes) {
     case 'num': return n;
     case 'pi': return num(mkPi(Q(1n)));
     case 'x': return num(E.xval !== undefined ? E.xval : X_POLY); // xval: evaluate at an exact x
-    case 'y': // only inside an equation, which tries a few values of y to solve for it
-      if (E.yval === undefined) throw new CalcError('y is for equations: type = and the other side');
-      return num(Q(BigInt(E.yval)));
     case 'fn': {
       const a = norm(n.a, notes);
       return a === n.a ? n : { ...n, a };
@@ -2102,7 +2081,6 @@ function prRaw(n, hl) {
     case 'root': return rootHTML(pr(n.a, hl), n.b ? pr(n.b, hl) : null);
     case 'pi': return 'π';
     case 'x': return '<i class="xv">x</i>';
-    case 'y': return '<i class="xv">y</i>';
     case 'fn': return fnHTML(n, hl);
     case 'bin': {
       if (n.bar) return fr(pr(n.a, hl), pr(n.b, hl));
@@ -2114,7 +2092,7 @@ function prRaw(n, hl) {
         return wrap ? `(${s})` : s;
       };
       const L = side(n.a, false), R = side(n.b, true);
-      const juxtapose = ['grp', 'root', 'pi', 'fn', 'x', 'y'].includes(n.b.k) || (n.b.style === 'irr' && exactIn(n.b.v, E.view));
+      const juxtapose = ['grp', 'root', 'pi', 'fn', 'x'].includes(n.b.k) || (n.b.style === 'irr' && exactIn(n.b.v, E.view));
       if (n.imp && juxtapose) return L + R; // 2(3+4), 2√3, 2π, 2sin(30°)
       return `${L}<span class="op">${OPS[n.op]}</span>${R}`;
     }
@@ -2219,60 +2197,22 @@ const miniSteps = lines => '<ol class="steps">' + lines.map(([why, eq]) => (why 
 // Degree 1 or 2 with fraction coefficients (no holes): the polynomial's coefficients, else null.
 const lowPoly = v => (v && isPoly(v) && allQ(v) && !holesOf(v).length && v.px[0].k <= 2 ? dense(v) : null);
 
-// A line y = mx + b as standard form Ax + By = C in whole numbers, A ≥ 0 (B > 0 when A is 0).
-function stdForm(m, b) {
-  const L = lcm(m.d, b.d);
-  let A = -m.n * (L / m.d), B = L, C = b.n * (L / b.d);
-  if (A < 0n) { A = -A; B = -B; C = -C; }
-  const g = gcd(gcd(A, B), C) || 1n;
-  return { A: A / g, B: B / g, C: C / g };
-}
-const stdHTML = ({ A, B, C }, view) => `${linHTML([{ c: Q(A), v: XV }, { c: Q(B), v: YV }], view)} = ${valueHTML(Q(C), view)}`;
-// The same in plain text, for the graph: "2x + 3y = 6", "y = 4", "2x = 3".
-function stdText({ A, B, C }) {
-  const num = n => (n < 0n ? MINUS + -n : String(n));
-  const terms = [[A, 'x'], [B, 'y']].filter(t => t[0] !== 0n).map(([c, v], i) => {
-    const a = abs(c), body = (a === 1n ? '' : String(a)) + v;
-    return i ? ` ${c < 0n ? MINUS : '+'} ${body}` : (c < 0n ? MINUS : '') + body;
-  });
-  return `${terms.join('')} = ${num(C)}`;
-}
-// Where Ax + By = C crosses each axis: set the other letter to 0 and solve.
-function interceptRows({ A, B, C }, view) {
-  const row = (name, other, a, b, onAxis, flat, pt) => {
-    if (a === 0n) return formRow(`${name}<small>where ${other} = 0</small>`, C === 0n ? `Every point: the line is the ${onAxis}` : `None: the line is parallel to the ${flat}, so it never crosses it`, ' none');
-    const v = Q(C, a);
-    return formRow(`${name}<small>where ${other} = 0</small>`,
-      `${linHTML([{ c: Q(a), v: b }], view)} = ${valueHTML(Q(C), view)}${a === 1n ? '' : `<span class="op">→</span>${b} = ${valueHTML(v, view)}`}<span class="op">→</span><b>${pt(v)}</b>`);
-  };
-  return row(`${XV}-intercept`, YV, A, XV, `${XV}-axis`, `${XV}-axis`, v => ptHTML(v, Q(0n), view))
-    + row(`${YV}-intercept`, XV, B, YV, `${YV}-axis`, `${YV}-axis`, v => ptHTML(Q(0n), v, view));
-}
-// One line for the display: "x-intercept (3, 0) · y-intercept (0, 2)".
-function interceptsAlt({ A, B, C }, view) {
-  const one = (name, a, axis, pt) => `<span class="altnote">${name} <b>${a === 0n ? (C === 0n ? `the whole ${axis}` : 'none') : pt(Q(C, a))}</b></span>`;
-  return one(`${XV}-intercept`, A, `${XV}-axis`, v => ptHTML(v, Q(0n), view)) + ' · '
-    + one(`${YV}-intercept`, B, `${YV}-axis`, v => ptHTML(Q(0n), v, view));
+// Where y = mx + b crosses each axis: y is 0 on the x-axis, and x is 0 on the y-axis.
+function interceptRows(m, b, view) {
+  const x0 = opV('/', negV(b), m);
+  return formRow(`${XV}-intercept<small>where ${YV} = 0</small>`,
+    `${polyHTML(undense([b, m]), view)} = 0<span class="op">→</span>${XV} = ${valueHTML(x0, view)}<span class="op">→</span><b>${ptHTML(x0, Q(0n), view)}</b>`)
+    + formRow(`${YV}-intercept<small>where ${XV} = 0</small>`, `${YV} = ${valueHTML(b, view)}<span class="op">→</span><b>${ptHTML(Q(0n), b, view)}</b>`);
 }
 
 function lineForms(m, b, view) {
-  const x1 = Q(1n), y1 = opV('+', m, b), flat = isZero(m), std = stdForm(m, b);
+  const x1 = Q(1n), y1 = opV('+', m, b);
   return '<h4>Forms of this line</h4>'
-    + formRow('Slope-intercept<small><i class="xv">y</i> = <i class="xv">m</i><i class="xv">x</i> + <i class="xv">b</i></small>', `${YV} = ${flat ? valueHTML(b, view) : polyHTML(undense([b, m]), view)}`)
-    + formRow('Standard<small><i class="xv">A</i><i class="xv">x</i> + <i class="xv">B</i><i class="xv">y</i> = <i class="xv">C</i></small>', stdHTML(std, view))
-    + (flat ? '' : formRow(`Point-slope<small>through ${ptHTML(x1, y1, view)}</small>`,
-      `${linHTML([{ c: Q(1n), v: YV }, { c: negV(y1), v: '' }], view)} = ${leadHTML(m, view)}(${linHTML([{ c: Q(1n), v: XV }, { c: negV(x1), v: '' }], view)})`))
-    + factsHTML([['slope', `${valueHTML(m, view)}${flat ? ' (a flat line)' : ''}`]])
-    + interceptRows(std, view);
-}
-// x = c: no slope, so standard form is the only form.
-function verticalForms(c, view) {
-  const std = { A: c.d, B: 0n, C: c.n };
-  return '<h4>Forms of this line</h4>'
-    + formRow('Standard<small><i class="xv">A</i><i class="xv">x</i> + <i class="xv">B</i><i class="xv">y</i> = <i class="xv">C</i></small>', stdHTML(std, view))
-    + formRow('Slope-intercept', 'None: a vertical line has no slope, so it can’t be written as <i class="xv">y</i> = <i class="xv">m</i><i class="xv">x</i> + <i class="xv">b</i>.', ' none')
-    + factsHTML([['slope', 'undefined (straight up and down)']])
-    + interceptRows(std, view);
+    + formRow('Slope-intercept<small><i class="xv">y</i> = <i class="xv">m</i><i class="xv">x</i> + <i class="xv">b</i></small>', `${YV} = ${polyHTML(undense([b, m]), view)}`)
+    + formRow(`Point-slope<small>through ${ptHTML(x1, y1, view)}</small>`,
+      `${linHTML([{ c: Q(1n), v: YV }, { c: negV(y1), v: '' }], view)} = ${leadHTML(m, view)}(${linHTML([{ c: Q(1n), v: XV }, { c: negV(x1), v: '' }], view)})`)
+    + factsHTML([['slope', valueHTML(m, view)]])
+    + interceptRows(m, b, view);
 }
 
 function parabolaForms(v, view) {
@@ -2308,9 +2248,7 @@ function parabolaForms(v, view) {
   return h1;
 }
 
-function formsHTML(v, view, eq) {
-  if (eq && eq.vertical && isQ(eq.vertical)) return `<section class="extra">${verticalForms(eq.vertical, view)}</section>`;
-  if (eq && eq.kind === 'y' && v && isQ(v)) return `<section class="extra">${lineForms(Q(0n), v, view)}</section>`;
+function formsHTML(v, view) {
   const cs = lowPoly(v);
   if (!cs) return '';
   return `<section class="extra">${cs.length === 2 ? lineForms(cs[1], cs[0], view) : parabolaForms(v, view)}</section>`;
@@ -2391,66 +2329,22 @@ function solvePair(F, G, nF, nG, view) {
 const isEqSign = it => it.t === 'c' && it.v === '=';
 const deepHas = (arr, t) => arr.some(it => it.t === t || Object.values(it).some(v => Array.isArray(v) && deepHas(v, t)));
 const anyHTML = (v, view) => (isAlg(v) ? algHTML(v, view) : valueHTML(v, view));
-// P(x) + q·y written the usual way: x terms, then y, then the number.
-function withYHTML(P, q, view) {
-  const terms = [];
-  const isP = isPoly(P), cs = isP ? dense(P) : null;
-  if (isP) for (let k = cs.length - 1; k >= 1; k--) terms.push({ c: cs[k], v: xPow(k) });
-  else if (isAlg(P)) terms.push({ alg: P });
-  terms.push({ c: q, v: YV });
-  if (isP) terms.push({ c: cs[0], v: '' });
-  else if (!isAlg(P)) terms.push({ c: P, v: '' });
-  const out = terms.filter(t => t.alg || !isZero(t.c)).map((t, i) => {
-    if (t.alg) return (i ? '<span class="op">+</span>' : '') + algHTML(t.alg, view);
-    if (isAlg(t.c)) { // xy, or (x + 1)y
-      const mono = isPoly(t.c) && t.c.px.length === 1 && isOne(t.c.px[0].c);
-      return (i ? '<span class="op">+</span>' : '') + (mono ? xPow(t.c.px[0].k) : `(${algHTML(t.c, view)})`) + t.v;
-    }
-    const neg = signV(t.c) < 0, a = neg ? negV(t.c) : t.c;
-    const body = t.v && isOne(a) ? t.v : valueHTML(a, view) + t.v;
-    return i ? `<span class="op">${neg ? MINUS : '+'}</span>${body}` : (neg ? MINUS : '') + body;
-  });
-  return out.join('') || '0';
-}
 function solveEquation(items, at, opts) {
   const L = items.slice(0, at), R = items.slice(at + 1);
   if (R.some(isEqSign)) throw new CalcError('An equation has just one =.');
   if (!L.length) throw new CalcError('Type the left side of the equation.');
   if (!R.length) throw new CalcError('Type the other side of the =.');
-  const side = (arr, yval) => {
-    const r = solve(arr, { ...opts, yval });
+  const side = arr => {
+    const r = solve(arr, opts);
     if (r.error) throw r.notPoly ? new NotPolyError(r.error) : new CalcError(r.error);
     return r.value;
   };
-  const hasY = deepHas(items, 'y');
-  const L0 = side(L, 0), R0 = side(R, 0);
-  let a = Q(0n);
-  if (hasY) {
-    const L1 = side(L, 1), R1 = side(R, 1), L2 = side(L, 2), R2 = side(R, 2);
-    a = opV('-', opV('-', L1, L0), opV('-', R1, R0));
-    const a2 = opV('-', opV('-', L2, L0), opV('-', R2, R0));
-    if (!isZero(opV('-', a2, opV('*', Q(2n), a)))) throw new CalcError('This solves equations where y isn’t squared or multiplied by y');
-  }
+  const L0 = side(L), R0 = side(R);
   E = opts;
   const view = opts.view, lines = [];
   const push = (note, html) => lines.push({ key: html, html, note });
   const typed = `${pr(parseArr(L))} = ${pr(parseArr(R))}`;
   push(null, typed);
-  const simple = isPoly(L0) || isQ(L0);
-  if (hasY && !isZero(a)) { // solve for y
-    const qL = opV('-', side(L, 1), L0), qR = opV('-', side(R, 1), R0);
-    E = opts;
-    const tidy = `${withYHTML(L0, qL, view)} = ${withYHTML(R0, qR, view)}`;
-    const alone = L.length === 1 && L[0].t === 'y' && isZero(qR);
-    if (tidy !== typed && simple) push('Simplify each side', tidy);
-    const rhs = opV('-', R0, L0), f = opV('/', rhs, a);
-    if (!alone) {
-      if (!(isZero(L0) && isZero(qR))) push(isZero(qR) ? `Move the other terms to the right side` : `Get the ${YV} terms on one side and the rest on the other`, `${withYHTML(Q(0n), a, view)} = ${anyHTML(rhs, view)}`);
-      if (!isOne(a)) push(isMinusOne(a) ? 'Multiply both sides by −1' : `Divide both sides by ${isAlg(a) && !(isPoly(a) && a.px.length === 1) ? `(${anyHTML(a, view)})` : anyHTML(a, view)}`, `${YV} = ${anyHTML(f, view)}`);
-    }
-    lines.at(-1).html = lines.at(-1).key;
-    return { lines, value: f, unit: '', equation: { kind: 'y', html: `${YV} = ${anyHTML(f, view)}` } };
-  }
   // solve for x (or check an equation with no letters in it)
   const d = opV('-', L0, R0);
   let xs = [], other = [], verdict = null;
@@ -2480,9 +2374,7 @@ function solveEquation(items, at, opts) {
   const cplx = other.filter(o => o.includes('<i>i</i>'));
   const html = verdict || (real.length ? real.join(' &ensp;or&ensp; ') + (cplx.length ? ` <small>(and ${cplx.join(', ')})</small>` : '')
     : `no real solution${cplx.length ? ` <small>(${cplx.join(', ')})</small>` : ''}`);
-  const lone = (a, b) => a.length === 1 && a[0].t === 'x' && !deepHas(b, 'x');
-  const vertical = (lone(L, R) || lone(R, L)) && xs.length === 1 ? xs[0] : undefined; // x = 3 is a line, 2x + 3 = 7 a sum to solve
-  return { lines, value: xs.length === 1 ? xs[0] : null, unit: '', equation: { kind: 'x', html, xs, vertical } };
+  return { lines, value: xs.length === 1 ? xs[0] : null, unit: '', equation: { kind: 'x', html, xs } };
 }
 // ===== UI =====
 
@@ -2514,7 +2406,6 @@ const S = {
   capture: null,      // action id whose new key (or key sequence) is being recorded
   capKeys: [],
   fx: false,          // graph mode: the expression is f(x)
-  eqm: false,         // equation mode: y and = type into the expression
   pins: [],           // functions pinned to the graph
   sel: null,          // graph mode: which pinned function is in the editor (null = the new one)
   draft: [],          // the new function, kept while a pinned one is being edited
@@ -2562,32 +2453,6 @@ function typeRepeat() {
   S.cur.i = 0;
   edited();
 }
-function typeY() {
-  startTyping(false);
-  curArr().splice(S.cur.i, 0, { t: 'y' });
-  S.cur.i++;
-  edited();
-}
-// X H: equation mode, where Y types y and = types an equals sign (= = still saves).
-function toggleEqMode() {
-  if (S.fx) { selectRow(null); S.fx = false; }
-  S.eqm = !S.eqm;
-  S.tab = 'steps';
-  toast(S.eqm ? 'Equation mode: type y and =, then = = saves' : 'Equation mode off: = saves again');
-  save();
-}
-// = saves, except in equation mode, where it types an equals sign.
-const pressEquals = () => (S.eqm ? typeEquals() : equals());
-const pressY = () => (S.eqm ? typeY() : toast(`y is for equations: ${keyName(S.keys.eqmode[0] || 'x h')} turns on equation mode`));
-// = makes an equation; it always goes between the two sides, outside any box.
-function typeEquals() {
-  if (S.fx) { toast('Graph mode is already f(x) = … — leave it to type an equation'); return; }
-  startTyping(false);
-  if (S.cur.path.length) S.cur = { path: [], i: S.cur.path[0].idx + 1 };
-  S.root.splice(S.cur.i, 0, { t: 'c', v: '=' });
-  S.cur.i++;
-  edited();
-}
 function typeX() {
   startTyping(false);
   curArr().splice(S.cur.i, 0, { t: 'x' });
@@ -2595,11 +2460,9 @@ function typeX() {
   edited();
 }
 const hasX = arr => arr.some(it => it.t === 'x' || (isTpl(it) && SLOTS[it.t].some(sl => hasX(it[sl]))));
-const hasY = arr => arr.some(it => it.t === 'y' || (isTpl(it) && SLOTS[it.t].some(sl => hasY(it[sl]))));
 // X G: graph mode. The display becomes f(x) = …, the Graph tab opens and plots it as you type.
 function toggleGraph() {
   if (S.fx) { selectRow(null); S.fx = false; S.tab = 'steps'; save(); return; } // X G again: back to the steps
-  S.eqm = false;
   S.fx = true;
   S.tab = 'graph';
   G.auto = true;
@@ -2945,9 +2808,7 @@ for (const [fn, name] of Object.entries(TRIG_NAMES)) action(fn, `${name} (${FN_L
 action('pi', 'Pi (π)', 'Trigonometry', typePi, 'π');
 action('angle', 'Degrees ⇄ radians', 'Trigonometry', toggleAngle, '');
 action('xvar', 'Variable x', 'Algebra & graphs', typeX, '<i class="xv">x</i>');
-action('eqmode', 'Equation mode: y and = (solves for x or y)', 'Algebra & graphs', toggleEqMode, '');
-action('yvar', 'Variable y (equation mode)', 'Algebra & graphs', pressY, '<i class="xv">y</i>');
-action('equals', 'Equals: saves the answer (types = in equation mode)', 'Calculate', pressEquals, '=', 'eq');
+action('equals', 'Equals: saves the answer', 'Calculate', equals, '=', 'eq');
 action('repeat', 'Repeating digits (0.3̅)', 'Numbers', typeRepeat, '<span>0.<span class="rep">3</span></span>');
 action('graph', 'Graph mode: f(x) = …', 'Algebra & graphs', toggleGraph, '');
 action('clearGraphs', 'Erase all graphs', 'Algebra & graphs', clearGraphs, '');
@@ -2970,12 +2831,12 @@ const DEFAULT_KEYS = {
   dot: ['.'], repeat: ['\\'], add: ['+', '[ ='], sub: ['-'], mul: ['*', '[ 8'], div: ['/'], lparen: ['('], rparen: [')'],
   pow: ['^', '[ 6'], root: ['r'], frac: ['f', '[ 0', '[ /'],
   sin: ['s'], cos: ['c'], tan: ['t'], csc: ['c s'], sec: ['s e'], cot: ['c t'],
-  asin: ['a s'], acos: ['a c'], atan: ['a t'], pi: ['p'], angle: ['d'], xvar: ['x'], graph: ['x g'], eqmode: ['x h'], clearGraphs: ['p z'], mixed: ['m'], view: ['v'], eq: ['q', '= ='], yvar: ['y'], equals: ['='], next: ['Enter'], ans: ['a'],
+  asin: ['a s'], acos: ['a c'], atan: ['a t'], pi: ['p'], angle: ['d'], xvar: ['x'], graph: ['x g'], clearGraphs: ['p z'], mixed: ['m'], view: ['v'], eq: ['q'], equals: ['='], next: ['Enter'], ans: ['a'],
   back: ['Backspace'], del: ['Delete'], clear: ['Escape'],
   left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'],
 };
 
-const SCI = ['sin', 'cos', 'tan', 'csc', 'sec', 'cot', 'pi', 'angle', 'asin', 'acos', 'atan', 'xvar', 'yvar', 'repeat', 'graph', 'eqmode'];
+const SCI = ['sin', 'cos', 'tan', 'csc', 'sec', 'cot', 'pi', 'angle', 'asin', 'acos', 'atan', 'xvar', 'repeat', 'graph'];
 // NAV is a d-pad spanning three rows in the first column.
 const PAD = [
   ['view', 'pow', 'root', 'back', 'clear'],
@@ -3040,13 +2901,13 @@ function deV(o) {
 function validItems(arr) {
   return Array.isArray(arr) && arr.every(it => it && (
     (it.t === 'c' && typeof it.v === 'string' && /^[0-9.+\-*/()=]$/.test(it.v)) ||
-    it.t === 'ans' || it.t === 'pi' || it.t === 'x' || it.t === 'y' ||
+    it.t === 'ans' || it.t === 'pi' || it.t === 'x' ||
     (isTpl(it) && (it.t !== 'fn' || ((it.pw ??= []) && Object.hasOwn(FN_LABEL, it.name))) && SLOTS[it.t].every(s => validItems(it[s])))
   ));
 }
 function save() {
   store.set({
-    keymapVersion: 9, pins: S.pins, fx: S.fx, eqm: S.eqm, view: S.view, angle: S.angle, hints: S.hints, autoExit: S.autoExit, tab: S.tab, keys: S.keys, ans: enV(S.ans),
+    keymapVersion: 10, pins: S.pins, fx: S.fx, view: S.view, angle: S.angle, hints: S.hints, autoExit: S.autoExit, tab: S.tab, keys: S.keys, ans: enV(S.ans),
     history: S.history.map(h => ({ items: h.items, v: enV(h.v), unit: h.unit, label: h.label })),
   });
 }
@@ -3059,7 +2920,6 @@ function load() {
   if (['steps', 'history', 'graph', 'keys'].includes(s.tab)) S.tab = s.tab;
   if (Array.isArray(s.pins)) S.pins = s.pins.filter(p => p && validItems(p.items)).slice(-5);
   S.fx = s.fx === true;
-  S.eqm = s.eqm === true && !S.fx;
   for (const id in A) {
     const ks = s.keys && s.keys[id];
     S.keys[id] = Array.isArray(ks) ? ks.filter(k => typeof k === 'string' && k) : null;
@@ -3072,7 +2932,7 @@ function load() {
     if (!keyOwner('q')) S.keys.eq.unshift('q');
   }
   for (const id in A) if (S.keys[id]) S.keys[id] = S.keys[id].map(k => (k === ' ' ? 'Space' : k));
-  // v9: = types an equals sign now, and = = (quickly) saves.
+  // v9 gave = its own key (equals), so it comes off save.
   if ((s.keymapVersion || 1) < 9 && S.keys.eq) S.keys.eq = S.keys.eq.filter(k => k !== '=');
   // Actions added since the keys were saved get their defaults, unless the key is already taken.
   for (const id in A) if (!S.keys[id]) S.keys[id] = DEFAULT_KEYS[id].filter(k => !keyOwner(k));
@@ -3085,11 +2945,12 @@ function load() {
   if ((s.keymapVersion || 1) < 7 && !keyOwner('[ 6')) S.keys.pow.push('[ 6');
   // v8 added [ / for fractions.
   if ((s.keymapVersion || 1) < 8 && !keyOwner('[ /')) S.keys.frac.push('[ /');
-  if ((s.keymapVersion || 1) < 9 && S.keys.eq && !keyOwner('= =')) S.keys.eq.push('= =');
+  // v10 dropped equation mode: = just saves, so = = is gone.
+  if ((s.keymapVersion || 1) < 10 && S.keys.eq) S.keys.eq = S.keys.eq.filter(k => k !== '= =');
   try { if (s.ans) S.ans = deV(s.ans); } catch {}
   if (Array.isArray(s.history)) {
     for (const h of s.history) {
-      try { if (validItems(h.items)) S.history.push({ items: h.items, v: deV(h.v), unit: h.unit === '°' ? '°' : '', label: ['x', 'y'].includes(h.label) ? h.label : '' }); } catch {}
+      try { if (validItems(h.items)) S.history.push({ items: h.items, v: deV(h.v), unit: h.unit === '°' ? '°' : '', label: h.label === 'x' ? 'x' : '' }); } catch {}
     }
   }
 }
@@ -3125,8 +2986,8 @@ function edArr(arr, path, isRoot, live) {
       s += `<span class="ch ans"${at(i)}>Ans</span>`;
     } else if (it.t === 'pi') {
       s += `<span class="ch"${at(i)}>π</span>`;
-    } else if (it.t === 'x' || it.t === 'y') {
-      s += `<span class="ch xv"${at(i)}>${it.t}</span>`;
+    } else if (it.t === 'x') {
+      s += `<span class="ch xv"${at(i)}>x</span>`;
     } else if (it.t === 'fn') {
       const pwPath = [...path, { idx: i, slot: 'pw' }];
       const showPw = it.pw.length || (live && samePath(S.cur.path.slice(0, pwPath.length), pwPath));
@@ -3160,7 +3021,7 @@ function renderEditor() {
   ARR_REG = [];
   exprEl.innerHTML = '<span class="expr-in">' + (S.fx ? `<span class="fxlabel">${S.sel === null ? 'f' : 'g' + (S.sel + 1)}(<i class="xv">x</i>) =</span>` : '') + (S.root.length
     ? edArr(S.root, [], true, true)
-    : CUR + `<span class="ph">${S.fx ? 'type a function of x…' : S.eqm ? 'Type an equation, like 2x + y = 5…' : 'Type a calculation…'}</span>`) + '</span>';
+    : CUR + `<span class="ph">${S.fx ? 'type a function of x…' : 'Type a calculation…'}</span>`) + '</span>';
   const c = exprEl.querySelector('.cur');
   if (c) {
     const er = exprEl.getBoundingClientRect(), cr = c.getBoundingClientRect();
@@ -3178,9 +3039,8 @@ function renderHint() {
   if (S.fx && S.sel !== null) h = `Editing g${S.sel + 1}(x) · ${kbd('eq')} saves · ${kbd('clear')} deletes it · ${kbd('up')} ${kbd('down')} move between functions`;
   else if (S.fx && !S.root.length && S.pins.length) h = `Graph mode · type a new function · ${kbd('up')} ${kbd('down')} move between functions · ${kbd('clear')} on one deletes it · ${kbd('clearGraphs')} erases all`;
   else if (S.fx && !S.root.length) h = `Graph mode · build f(x) with ${kbd('xvar')} · ${kbd('eq')} pins it to compare · ${kbd('graph')} or ${kbd('clear')} leaves`;
-  else if (S.eqm && !S.root.length) h = `Equation mode · ${kbd('yvar')} types <i class="xv">y</i> and ${kbd('equals')} an equals sign · <kbd>=</kbd><kbd>=</kbd> or ${kbd('eq')} saves · ${kbd('eqmode')} leaves`;
   else if (!S.root.length) h = `The answer shows as you type · ${kbd('eq')} saves it to Ans and history · ${kbd('next')} moves to the next box, or saves when you’re not in one`;
-  else if (!p && S.root.some(isEqSign)) h = `Equation · it’s solved as you type: for <i class="xv">y</i> if it has one, otherwise for <i class="xv">x</i> · ${kbd('eq')} saves`;
+  else if (!p && S.root.some(isEqSign)) h = `Equation · it’s solved for <i class="xv">x</i> as you type · ${kbd('eq')} saves`;
   else if (p && p.slot === 'num') h = `Top of the fraction · ${on} to the bottom`;
   else if (p && p.slot === 'den') h = `Bottom of the fraction · ${on}${S.autoExit ? ', or just type the next operator' : ''}`;
   else if (p && p.slot === 'whole') h = `Whole number · ${on} to the fraction part`;
@@ -3242,8 +3102,6 @@ function renderResult(res) {
     resultEl.innerHTML = `<span>${res.equation.html}</span>`;
     const xs = res.equation.xs || [];
     if (xs.some(x => !exactIn(x, 'frac') || (isQ(x) && x.d !== 1n))) altEl.innerHTML = xs.map(x => `<i class="xv">x</i> ≈ ${fmtFloat(toF(x), 6)}`).join(', ');
-    const ln = lineOf({ items: S.root, value: res.value, vx: res.equation.vertical });
-    if (ln) altEl.innerHTML = interceptsAlt(ln, S.view);
     return;
   }
   if (isAlg(res.value)) { renderAlgResult(res); return; }
@@ -3301,7 +3159,6 @@ function renderSteps(res) {
         <li>${kbd('sin')} ${kbd('cos')} ${kbd('tan')} for trig — exact at every multiple of 1.5°: sin(30°) = ${fr('1', '2')}, sin(15°) = ${radHTML(sinQ1(30))}, sin(18°) = ${radHTML(sinQ1(36))}. ${kbd('angle')} switches degrees/radians and ${kbd('pi')} types π.</li>
         <li>${kbd('next')} moves to the next box: ${kbd('sin')} ${kbd('pow')} 2 ${kbd('next')} 3 0 is sin²(30°), while ${kbd('sin')} 3 0 ${kbd('pow')} 2 is sin(30²).</li>
         <li>${kbd('xvar')} types <i class="xv">x</i>: (<i class="xv">x</i> + 1)<sup class="sup">2</sup> expands to <i class="xv">x</i><sup class="sup">2</sup> + 2<i class="xv">x</i> + 1, and that factors back. ${kbd('graph')} graphs a function.</li>
-        <li>${kbd('eqmode')} turns on equation mode, where ${kbd('equals')} types an equals sign: 2<i class="xv">x</i> + 3 = 7 is solved for <i class="xv">x</i>, and with ${kbd('yvar')} 2<i class="xv">x</i> − <i class="xv">y</i> = −3 becomes <i class="xv">y</i> = 2<i class="xv">x</i> + 3, with every form of the line.</li>
         <li>${kbd('view')} switches the answer between fraction, mixed number and decimal.</li>
         <li>Change any key in the <b>Keybinds</b> tab.</li>
       </ul></div>`;
@@ -3331,7 +3188,7 @@ function renderSteps(res) {
     return;
   }
   if (res.lines.length === 1 && !res.equation) h += `<p class="msg">That’s already as simple as it gets.</p>`;
-  h += formsHTML(res.value, S.view, res.equation) + systemHTML(res, S.view);
+  h += formsHTML(res.value, S.view) + systemHTML(res, S.view);
   el.innerHTML = h;
 }
 
@@ -3374,13 +3231,9 @@ function escapeHTML(s) { return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<':
 function renderPad() {
   const btn = (id, extra = '') => {
     const a = A[id], k = S.keys[id][0];
-    let cls = a.cls;
     if (id === 'graph') extra += S.fx ? ' on' : '';
-    if (id === 'eqmode') extra += S.eqm ? ' on' : '';
-    if (id === 'yvar' && !S.eqm) extra += ' dim';
-    if (id === 'equals' && S.eqm) cls = 'op'; // types = rather than saving
-    const label = id === 'eqmode' ? `<span class="stack"><b><i class="xv">y</i> =</b><small>${S.eqm ? 'on' : 'equation'}</small></span>` : id === 'graph' ? `<span class="stack"><b>f(<i class="xv">x</i>)</b><small>${S.fx ? 'graphing' : 'graph'}</small></span>` : id === 'angle' ? `<span class="stack"><b>${S.angle === 'deg' ? 'DEG' : 'RAD'}</b><small>⇄ ${S.angle === 'deg' ? 'rad' : 'deg'}</small></span>` : a.label;
-    return `<button type="button" class="k ${cls} ${extra}" data-act="${id}" aria-label="${a.name}">${label}${k ? `<span class="kb">${escapeHTML(keyBadge(k))}</span>` : ''}</button>`;
+    const label = id === 'graph' ? `<span class="stack"><b>f(<i class="xv">x</i>)</b><small>${S.fx ? 'graphing' : 'graph'}</small></span>` : id === 'angle' ? `<span class="stack"><b>${S.angle === 'deg' ? 'DEG' : 'RAD'}</b><small>⇄ ${S.angle === 'deg' ? 'rad' : 'deg'}</small></span>` : a.label;
+    return `<button type="button" class="k ${a.cls} ${extra}" data-act="${id}" aria-label="${a.name}">${label}${k ? `<span class="kb">${escapeHTML(keyBadge(k))}</span>` : ''}</button>`;
   };
   $('#sci').innerHTML = SCI.map(id => btn(id)).join('');
   padEl.innerHTML = PAD.flat().map(id => (id === 'NAV'
@@ -3398,8 +3251,6 @@ function renderTabs() {
 
 function render() {
   document.body.classList.toggle('nohints', !S.hints);
-  document.body.classList.toggle('eqm', S.eqm);
-  $('#eqChip').hidden = !S.eqm;
   for (const b of document.querySelectorAll('[data-view]')) b.setAttribute('aria-pressed', b.dataset.view === S.view);
   $('#angleBadge').textContent = S.angle === 'deg' ? 'DEG' : 'RAD';
   ansLineEl.innerHTML = S.ans ? `<span class="ans">Ans</span> ${eqSign(S.ans, S.view)} ${valueHTML(S.ans, S.view)}` : '';
@@ -3445,12 +3296,10 @@ function realPow(b, e) {
 const evalAlg = (v, x) => (isRF(v) ? evalAlg(v.rn, x) / evalAlg(v.rd, x)
   : isPoly(v) ? v.px.reduce((s, m) => s + toF(m.c) * x ** m.k, 0) : toF(v));
 // Plain number evaluation of an expression at x, for plotting.
-let EVAL_Y = 0;
 function evalF(n, x) {
   switch (n.k) {
     case 'num': return toF(n.v);
     case 'x': return x;
-    case 'y': return EVAL_Y;
     case 'pi': return Math.PI;
     case 'ans': return !S.ans ? NaN : isAlg(S.ans) ? evalAlg(S.ans, x) : toF(S.ans);
     case 'neg': return -evalF(n.a, x);
@@ -3474,7 +3323,7 @@ const hasTrig = arr => arr.some(it => it.t === 'fn' || (isTpl(it) && SLOTS[it.t]
 function graphSources() {
   const out = [];
   const newRow = S.sel === null ? S.root : S.draft;
-  if (hasX(newRow) || hasY(newRow) || (S.fx && newRow.length)) out.push({ items: newRow, current: S.sel === null, color: GRAPH_COLORS[0] }); // f(x) = 6 is a flat line
+  if (hasX(newRow) || (S.fx && newRow.length)) out.push({ items: newRow, current: S.sel === null, color: GRAPH_COLORS[0] }); // f(x) = 6 is a flat line
   S.pins.forEach((p, i) => out.push(i === S.sel
     ? { items: S.root, pin: i, current: true, color: GRAPH_COLORS[i + 1] }
     : { items: p.items, pin: i, color: GRAPH_COLORS[i + 1] }));
@@ -3482,17 +3331,7 @@ function graphSources() {
     let f = null;
     try {
       const at = src.items.findIndex(isEqSign);
-      const L = src.items.slice(0, at), R = src.items.slice(at + 1), lone = (a, b) => a.length === 1 && a[0].t === 'x' && !hasX(b);
-      if (at >= 0 && !hasY(src.items) && (lone(L, R) || lone(R, L))) { // x = 3: a vertical line, not a function of x
-        const r = solve(lone(L, R) ? R : L, { view: 'frac', ans: S.ans, angle: S.angle });
-        if (!r.error && r.value && !isAlg(r.value) && Number.isFinite(toF(r.value))) return { ...src, f: () => NaN, vx: r.value, value: null };
-      }
       if (at < 0) { const ast = parseArr(src.items); f = x => evalF(ast, x); }
-      else if (hasY(src.items)) { // an equation: solve for y at each x (it's linear in y)
-        const L = parseArr(src.items.slice(0, at)), R = parseArr(src.items.slice(at + 1));
-        const at0 = (n, x, y) => { EVAL_Y = y; return evalF(n, x); };
-        f = x => { const l0 = at0(L, x, 0), r0 = at0(R, x, 0); return (r0 - l0) / ((at0(L, x, 1) - l0) - (at0(R, x, 1) - r0)); };
-      }
     } catch {}
     return { ...src, f };
   }).filter(src => src.f);
@@ -3525,7 +3364,7 @@ function autoView(srcs, zeros) {
   const trig = srcs.some(s => hasTrig(s.items));
   if (trig) [x0, x1] = S.angle === 'deg' ? [-360, 360] : [-2 * Math.PI, 2 * Math.PI];
   else { // fit the interesting part, like a graphing calculator: let the tails run off-screen
-    const pts = srcs.flatMap(s => (s.vx ? [[toF(s.vx), 0]] : features(s.f))).concat(zeros.filter(Number.isFinite).map(z => [z, 0]));
+    const pts = srcs.flatMap(s => features(s.f)).concat(zeros.filter(Number.isFinite).map(z => [z, 0]));
     const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
     if (pts.length > 1 && Math.max(...xs) > Math.min(...xs)) {
       const lo = Math.min(...xs), hi = Math.max(...xs), pad = Math.max(2, (hi - lo) * 0.6), mid = (lo + hi) / 2;
@@ -3588,13 +3427,6 @@ function meetPoints(a, b, range) {
     if (!Number.isFinite(xf) || pts.some(p => Math.abs(p.xf - xf) < 1e-7 * Math.max(1, Math.abs(xf)))) return;
     pts.push({ x, y, exact, xf, yf: toF(y) });
   };
-  if (a.vx || (b && b.vx)) { // x = c meets a curve at (c, its value there), and the x-axis at (c, 0)
-    const [v, o] = a.vx ? [a, b] : [b, a];
-    if (o && o.vx) return { pts, same: eqV(v.vx, o.vx), complete: true };
-    const y = o ? xEval(o, v.vx) : Q(0n);
-    if (y !== null && !isAlg(y)) add(v.vx, fullyExact(y) ? y : approx(toF(y)), fullyExact(y));
-    return { pts, same: false, complete: true };
-  }
   // polynomials (and fractions of them): solve a − b = 0 exactly
   const av = a.value, bv = b ? b.value : Q(0n);
   const algish = v => v && (isAlg(v) || isQ(v));
@@ -3641,19 +3473,12 @@ function meetPoints(a, b, range) {
   pts.sort((p, q) => p.xf - q.xf);
   return { pts: pts.slice(0, 12), same: false, complete };
 }
-const curveName = s => (s.pin !== undefined ? 'g' + (s.pin + 1) : S.fx ? 'f' : 'y');
-// An equation-mode line (2x + 3y = 6, y = 4, x = 3) as whole-number standard form, or null.
-function lineOf(s) {
-  if (!s.items.some(isEqSign)) return null;
-  if (s.vx) return isQ(s.vx) ? { A: s.vx.d, B: 0n, C: s.vx.n } : null;
-  if (!hasY(s.items)) return null; // 2x + 3 = 7 is solved, not drawn
+const curveName = s => (s.pin !== undefined ? 'g' + (s.pin + 1) : 'f');
+// A straight line like 2x + 1: its intercepts are written beside their dots on the graph.
+function isLine(s) {
   if (!('value' in s)) { const r = solve(s.items, { view: S.view, ans: S.ans, angle: S.angle }); s.value = r.error ? null : r.value; } // a redraw while dragging
-  if (s.value && isQ(s.value)) return stdForm(Q(0n), s.value);
-  const cs = lowPoly(s.value);
-  return cs && cs.length === 2 ? stdForm(cs[1], cs[0]) : null;
+  return lowPoly(s.value)?.length === 2;
 }
-// How a curve is named in the key points: g1(x), or "the line" for an equation.
-const curveTitle = (s, cap) => (s.items.some(isEqSign) ? `${cap ? 'T' : 't'}he ${lineOf(s) ? 'line' : 'graph'}` : `${curveName(s)}(<i class="xv">x</i>)`);
 const plainV = v => (isQ(v) ? (v.n < 0n ? MINUS : '') + abs(v.n) + (v.d === 1n ? '' : '/' + v.d) : tickText(Number(toF(v).toPrecision(5))));
 const mainSource = srcs => srcs.find(s => s.current) || srcs[0];
 function updateKeyPoints(srcs) {
@@ -3661,17 +3486,16 @@ function updateKeyPoints(srcs) {
   if (!G.view || !srcs.length) { el.innerHTML = ''; G.points = []; return; }
   for (const s of srcs) if (!('value' in s)) { const r = solve(s.items, { view: S.view, ans: S.ans, angle: S.angle }); s.value = r.error ? null : r.value; }
   const range = [G.view.x0, G.view.x1], groups = [];
+  const nm = s => `${curveName(s)}(<i class="xv">x</i>)`;
   for (let i = 0; i < srcs.length; i++) for (let j = i + 1; j < srcs.length; j++) {
-    groups.push({ title: `${curveTitle(srcs[i], true)} and ${curveTitle(srcs[j])} meet`, meet: true, color: srcs[i].color, ...meetPoints(srcs[i], srcs[j], range) });
+    groups.push({ title: `${nm(srcs[i])} and ${nm(srcs[j])} meet`, meet: true, color: srcs[i].color, ...meetPoints(srcs[i], srcs[j], range) });
   }
   const main = mainSource(srcs);
-  groups.push({ title: `${curveTitle(main, true)} crosses the <i class="xv">x</i>-axis`, color: main.color, ...meetPoints(main, null, range) });
-  const y0 = main.vx ? null : xEval(main, Q(0n));
-  if (main.vx) groups.push({ title: `${curveTitle(main, true)} crosses the <i class="xv">y</i>-axis`, color: main.color, complete: true, pts: [],
-    note: isZero(main.vx) ? 'everywhere: it’s the <i class="xv">y</i>-axis' : 'never: it’s vertical' });
-  else if (y0 !== null && !isAlg(y0)) {
+  groups.push({ title: `${nm(main)} crosses the <i class="xv">x</i>-axis`, color: main.color, ...meetPoints(main, null, range) });
+  const y0 = xEval(main, Q(0n));
+  if (y0 !== null && !isAlg(y0)) {
     const ex = fullyExact(y0);
-    groups.push({ title: `${curveTitle(main, true)} crosses the <i class="xv">y</i>-axis`, color: main.color, complete: true,
+    groups.push({ title: `${nm(main)} crosses the <i class="xv">y</i>-axis`, color: main.color, complete: true,
       pts: [{ x: Q(0n), y: ex ? y0 : approx(toF(y0)), exact: ex, xf: 0, yf: toF(y0) }] });
   }
   let n = 0;
@@ -3679,7 +3503,7 @@ function updateKeyPoints(srcs) {
   const val = (v, exact) => (exact ? valueHTML(v, S.view) : fmtFloat(toF(v), 5));
   let k = 0;
   el.innerHTML = '<h4>Key points</h4>' + groups.map(g => {
-    const body = g.note || g.same ? g.note || 'they’re the same curve'
+    const body = g.same ? 'they’re the same curve'
       : g.pts.length ? g.pts.map(p => `<span class="pt">${g.meet ? `<b class="pt-n">${++k}</b>` : ''}${p.exact ? '' : '≈ '}(${val(p.x, p.exact)}, ${val(p.y, p.exact)})</span>`).join('')
       : g.complete ? 'none' : 'none in view';
     return `<div class="pt-group"><span class="pt-title">${g.title}${g.complete || g.same ? '' : ' <small>(in view)</small>'}</span>${body}</div>`;
@@ -3700,15 +3524,6 @@ function fitPoints() {
 let ptsTimer;
 const refreshKeyPoints = () => { clearTimeout(ptsTimer); ptsTimer = setTimeout(() => { updateKeyPoints(graphSources()); drawGraph(); }, 150); };
 
-// Equations are named by themselves: a line in standard form, with y = mx + b beside it.
-function fnLabel(s) {
-  const ln = lineOf(s);
-  if (!s.items.some(isEqSign)) return `${curveName(s)}(<i class="xv">x</i>) = ${edArr(s.items, [], true, false)}`;
-  if (!ln) return edArr(s.items, [], true, false);
-  const m = ln.B ? Q(-ln.A, ln.B) : null, b = ln.B ? Q(ln.C, ln.B) : null;
-  const si = m && !isZero(m) ? `${YV} = ${polyHTML(undense([b, m]), S.view)}` : '';
-  return `${stdHTML(ln, S.view)}${si ? `<small class="graph-si">${si}</small>` : ''}`;
-}
 function renderGraph(res) {
   if (S.tab !== 'graph') return;
   const srcs = graphSources();
@@ -3726,11 +3541,11 @@ function renderGraph(res) {
   const refit = G.auto && (sig !== G.sig || !G.view);
   if (refit) G.view = autoView(srcs, zeros);
   G.sig = sig;
-  srcs.forEach(src => { if (src.current && res && !src.vx) src.value = res.error ? null : res.value; });
+  srcs.forEach(src => { if (src.current && res) src.value = res.error ? null : res.value; });
   updateKeyPoints(srcs);
   if (refit && fitPoints()) updateKeyPoints(srcs);
   $('#graphFns').innerHTML = srcs.map(s => `<div class="graph-fn${s.current && S.fx ? ' sel' : ''}" data-row="${s.pin ?? ''}"><span class="sw" style="background:var(${s.color})"></span>
-    <span>${fnLabel(s)}</span>
+    <span>${curveName(s)}(<i class="xv">x</i>) = ${edArr(s.items, [], true, false)}</span>
     ${s.pin !== undefined ? `<button type="button" data-unpin="${s.pin}" aria-label="Remove">×</button>` : ''}</div>`).join('');
   drawGraph(srcs);
 }
@@ -3768,7 +3583,6 @@ function drawGraph(srcs = graphSources()) {
   const N = Math.max(400, Math.round(W * 2));
   for (const s of [...srcs].reverse()) {
     ctx.strokeStyle = col(s.color); ctx.lineWidth = s.current ? 2.6 : 2; ctx.beginPath();
-    if (s.vx) { const vx = Math.round(X(toF(s.vx))) + .5; ctx.moveTo(vx, 0); ctx.lineTo(vx, H); ctx.stroke(); continue; }
     let prev = null;
     for (let i = 0; i <= N; i++) {
       const x = x0 + (x1 - x0) * i / N, y = s.f(x);
@@ -3791,7 +3605,7 @@ function drawGraph(srcs = graphSources()) {
     ctx.fillStyle = col('--ink'); ctx.beginPath(); ctx.arc(px + 11, py - 11, 8, 0, 7); ctx.fill();
     ctx.fillStyle = col('--panel'); ctx.fillText(String(p.n), px + 11, py - 10.5);
   }
-  // a line from equation mode: its standard form beside it, and its intercepts beside their dots
+  // a straight line: its intercepts written beside their dots
   const halo = (text, x, y, color) => { // on a small backing, so grid lines and tick numbers don't run through it
     const w = ctx.measureText(text).width, h = parseInt(ctx.font.match(/(\d+)px/)[1], 10);
     const left = ctx.textAlign === 'right' ? x - w : x, top = ctx.textBaseline === 'top' ? y - 3 : y - h - 3;
@@ -3800,23 +3614,10 @@ function drawGraph(srcs = graphSources()) {
     ctx.fill();
     ctx.fillStyle = color; ctx.fillText(text, x, y);
   };
-  const ln = main && lineOf(main);
-  if (ln) {
-    ctx.font = '700 14px system-ui, sans-serif'; ctx.textBaseline = 'bottom';
-    const label = stdText(ln), tw = ctx.measureText(label).width;
-    let at = null;
-    if (main.vx) { const vx = X(toF(main.vx)); at = vx > W - tw - 16 ? [vx - 8, 26, 'right'] : [vx + 8, 26, 'left']; }
-    else { // where the line is on screen, towards the right, on the side the line falls away from
-      const down = main.f(x1) < main.f(x0);
-      for (let t = 0.9; t >= 0.3 && !at; t -= 0.05) {
-        const x = x0 + (x1 - x0) * t, px = X(x), py = Y(main.f(x));
-        if (py > 30 && py < H - 12 && (down ? px + 10 + tw < W - 8 : px - 10 - tw > 8)) at = down ? [px + 10, py - 8, 'left'] : [px - 10, py - 8, 'right'];
-      }
-    }
-    if (at) { ctx.textAlign = at[2]; halo(label, at[0], at[1], col(main.color)); }
+  if (main && isLine(main)) {
     ctx.font = '600 12px system-ui, sans-serif'; ctx.textBaseline = 'bottom';
     // away from the axis numbers (above the x-axis, left of the y-axis) and from the line itself
-    const rising = !main.vx && main.f(x1) > main.f(x0);
+    const rising = main.f(x1) > main.f(x0);
     for (const p of G.points || []) {
       if (p.n !== null || !Number.isFinite(p.yf)) continue;
       const onY = p.xf === 0 && p.yf !== 0, left = onY || rising;
@@ -3934,7 +3735,6 @@ for (const el of [padEl, $('#sci')]) {
   });
 }
 $('#angleBadge').addEventListener('click', () => { toggleAngle(); render(); });
-$('#eqChip').addEventListener('click', () => { toggleEqMode(); render(); });
 
 const graphCv = $('#graphCanvas');
 graphCv.addEventListener('pointerdown', e => {
