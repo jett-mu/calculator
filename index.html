@@ -5,25 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Calculator</title>
 <meta name="description" content="A student calculator with exact fractions, order-of-operations steps, and fully remappable keyboard shortcuts.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a4bb8'/%3E%3Ctext x='16' y='14' font-family='sans-serif' font-size='11' font-weight='700' fill='white' text-anchor='middle'%3E1%3C/text%3E%3Crect x='9' y='16' width='14' height='2' fill='white'/%3E%3Ctext x='16' y='28' font-family='sans-serif' font-size='11' font-weight='700' fill='white' text-anchor='middle'%3E2%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%229%22 fill=%22%231a2238%22/%3E%3Ccircle cx=%2216%22 cy=%229.2%22 r=%223.6%22 fill=%22%2386a8ff%22/%3E%3Crect x=%226.5%22 y=%2214.6%22 width=%2219%22 height=%222.8%22 rx=%221.4%22 fill=%22%23f4f6fb%22/%3E%3Ccircle cx=%2216%22 cy=%2222.8%22 r=%223.6%22 fill=%22%236ee0cb%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #f3f1ea;
-  --panel: #fffefa;
-  --ink: #1b2030;
-  --muted: #6a6f7e;
-  --line: #e2ddd0;
-  --key: #ffffff;
-  --key-shadow: #d6d0c1;
-  --fn: #ecE8de;
-  --op: #e6ecfb;
-  --op-ink: #2847b0;
-  --accent: #2a4bb8;
-  --accent-ink: #ffffff;
-  --hl: #ffe680;
-  --hl-ink: #1b2030;
-  --err: #b42318;
-  --err-bg: #fdecea;
+  --bg: oklch(0.958 0.007 258);
+  --panel: oklch(0.993 0.002 258);
+  --ink: oklch(0.22 0.03 262);
+  --muted: oklch(0.47 0.025 262);
+  --line: oklch(0.9 0.01 258);
+  --key: oklch(0.997 0.001 258);
+  --key-hover: oklch(0.975 0.006 258);
+  --key-press: oklch(0.915 0.014 258);
+  --key-fn: oklch(0.915 0.012 258);
+  --fn: oklch(0.935 0.01 258);
+  --op: oklch(0.885 0.05 258);
+  --op-ink: oklch(0.4 0.17 260);
+  --accent: oklch(0.5 0.19 259);
+  --accent-ink: oklch(0.99 0 0);
+  --hl: oklch(0.91 0.13 96);
+  --hl-ink: oklch(0.22 0.03 262);
+  --err: oklch(0.52 0.19 27);
+  --err-bg: oklch(0.95 0.03 27);
+  --eq: oklch(0.52 0.1 188); --eq-bg: oklch(0.93 0.035 188); --eq-ink: oklch(0.99 0 0);
   --tag-paren: #f3e3ff; --tag-paren-ink: #6b2fa3;
   --tag-pow: #dcf3f1;   --tag-pow-ink: #0f6b65;
   --g1: #2a4bb8; --g2: #d0453a; --g3: #1d8a4a; --g4: #9a3fc4; --g5: #c77a0a;
@@ -31,15 +37,33 @@
   --tag-md: #e6ecfb;    --tag-md-ink: #2847b0;
   --tag-as: #e3f5e8;    --tag-as-ink: #1d7a3d;
   --tag-frac: #fff0dc;  --tag-frac-ink: #a3570b;
-  --radius: 14px;
+  /* The display is a dark slate in both themes: the one thing on screen that is always the answer. */
+  --disp: oklch(0.24 0.04 263);
+  --disp-eqm: oklch(0.27 0.05 200);
+  --disp-ink: oklch(0.975 0.006 258);
+  --disp-muted: oklch(0.76 0.03 258);
+  --disp-line: oklch(0.36 0.04 262);
+  --disp-fn: oklch(0.31 0.04 262);
+  --disp-accent: oklch(0.8 0.11 248);
+  --disp-eq: oklch(0.84 0.11 185);
+  --disp-err: oklch(0.82 0.1 27);
+  --disp-err-bg: oklch(0.33 0.07 27);
+  --radius: 28px;
+  --key-radius: 20px;
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #14161b; --panel: #1c1f26; --ink: #e9eaef; --muted: #9298a7; --line: #2d313b;
-    --key: #262a33; --key-shadow: #0c0d10; --fn: #2c303a; --op: #25305a; --op-ink: #b4c4ff;
-    --accent: #7090ff; --accent-ink: #0c1024; --hl: rgba(255, 210, 60, .32); --hl-ink: #fff6d6;
-    --err: #ff9b91; --err-bg: #3a1f1f;
+    --bg: oklch(0.175 0.014 262); --panel: oklch(0.215 0.016 262); --ink: oklch(0.95 0.008 258);
+    --muted: oklch(0.73 0.02 258); --line: oklch(0.3 0.018 262);
+    --key: oklch(0.265 0.018 262); --key-hover: oklch(0.29 0.02 262); --key-press: oklch(0.33 0.022 262);
+    --key-fn: oklch(0.225 0.016 262); --fn: oklch(0.27 0.018 262);
+    --op: oklch(0.32 0.07 260); --op-ink: oklch(0.87 0.08 255);
+    --accent: oklch(0.72 0.14 254); --accent-ink: oklch(0.16 0.03 262);
+    --hl: oklch(0.5 0.1 90 / .55); --hl-ink: oklch(0.98 0.03 95);
+    --err: oklch(0.78 0.12 27); --err-bg: oklch(0.29 0.06 27);
+    --eq: oklch(0.8 0.11 185); --eq-bg: oklch(0.29 0.05 190); --eq-ink: oklch(0.17 0.03 200);
     --tag-paren: #34234a; --tag-paren-ink: #dcb8ff;
     --tag-pow: #173a38;   --tag-pow-ink: #8fe0d8;
     --g1: #7f9bff; --g2: #ff7f73; --g3: #5fd690; --g4: #cf8cff; --g5: #ffb547;
@@ -47,21 +71,30 @@
     --tag-md: #25305a;    --tag-md-ink: #b4c4ff;
     --tag-as: #1d3a28;    --tag-as-ink: #9de0b1;
     --tag-frac: #3d2c17;  --tag-frac-ink: #ffcb8a;
+    --disp: oklch(0.125 0.022 263); --disp-eqm: oklch(0.17 0.04 200);
+    --disp-line: oklch(0.25 0.025 262); --disp-fn: oklch(0.22 0.025 262);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #14161b; --panel: #1c1f26; --ink: #e9eaef; --muted: #9298a7; --line: #2d313b;
-  --key: #262a33; --key-shadow: #0c0d10; --fn: #2c303a; --op: #25305a; --op-ink: #b4c4ff;
-  --accent: #7090ff; --accent-ink: #0c1024; --hl: rgba(255, 210, 60, .32); --hl-ink: #fff6d6;
-  --err: #ff9b91; --err-bg: #3a1f1f;
+  --bg: oklch(0.175 0.014 262); --panel: oklch(0.215 0.016 262); --ink: oklch(0.95 0.008 258);
+  --muted: oklch(0.73 0.02 258); --line: oklch(0.3 0.018 262);
+  --key: oklch(0.265 0.018 262); --key-hover: oklch(0.29 0.02 262); --key-press: oklch(0.33 0.022 262);
+  --key-fn: oklch(0.225 0.016 262); --fn: oklch(0.27 0.018 262);
+  --op: oklch(0.32 0.07 260); --op-ink: oklch(0.87 0.08 255);
+  --accent: oklch(0.72 0.14 254); --accent-ink: oklch(0.16 0.03 262);
+  --hl: oklch(0.5 0.1 90 / .55); --hl-ink: oklch(0.98 0.03 95);
+  --err: oklch(0.78 0.12 27); --err-bg: oklch(0.29 0.06 27);
+  --eq: oklch(0.8 0.11 185); --eq-bg: oklch(0.29 0.05 190); --eq-ink: oklch(0.17 0.03 200);
   --tag-paren: #34234a; --tag-paren-ink: #dcb8ff;
   --tag-pow: #173a38;   --tag-pow-ink: #8fe0d8;
-    --g1: #7f9bff; --g2: #ff7f73; --g3: #5fd690; --g4: #cf8cff; --g5: #ffb547;
-    --tag-trig: #3d1a2a;  --tag-trig-ink: #ffb3cf;
-    --tag-md: #25305a;    --tag-md-ink: #b4c4ff;
+  --g1: #7f9bff; --g2: #ff7f73; --g3: #5fd690; --g4: #cf8cff; --g5: #ffb547;
+  --tag-trig: #3d1a2a;  --tag-trig-ink: #ffb3cf;
+  --tag-md: #25305a;    --tag-md-ink: #b4c4ff;
   --tag-as: #1d3a28;    --tag-as-ink: #9de0b1;
   --tag-frac: #3d2c17;  --tag-frac-ink: #ffcb8a;
+  --disp: oklch(0.125 0.022 263); --disp-eqm: oklch(0.17 0.04 200);
+  --disp-line: oklch(0.25 0.025 262); --disp-fn: oklch(0.22 0.025 262);
   color-scheme: dark;
 }
 
@@ -71,58 +104,85 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  font: 16px/1.5 "Raleway", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Raleway sets old-style figures by default; a calculator needs lining ones. */
+  font-variant-numeric: lining-nums;
+  font-feature-settings: "lnum" 1;
+  -webkit-font-smoothing: antialiased;
 }
-button { font: inherit; color: inherit; }
+button { font: inherit; color: inherit; font-feature-settings: inherit; }
+button:focus-visible, .tab:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 kbd {
-  font: 600 .8em/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  padding: .2em .45em; border-radius: 5px;
-  background: var(--fn); border: 1px solid var(--line); border-bottom-width: 2px;
+  font: 700 .78em/1 "Raleway", system-ui, sans-serif; font-feature-settings: "lnum" 1;
+  padding: .28em .55em; border-radius: 6px; letter-spacing: .02em;
+  background: var(--fn); color: var(--ink);
 }
 
 .app {
-  max-width: 1060px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 28px 16px 48px;
+  padding: 36px 24px 64px;
   display: grid;
-  grid-template-columns: minmax(0, 430px) minmax(0, 1fr);
-  gap: 22px;
+  grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+  gap: 28px;
   align-items: start;
 }
-.top { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
-.top h1 { margin: 0; font-size: 22px; letter-spacing: -.01em; }
-.top p { margin: 0; color: var(--muted); font-size: 14px; }
+.top { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin-bottom: 4px; }
+.top h1 { margin: 0; display: flex; align-items: center; gap: 12px; font-size: 26px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+.top .mark { width: 34px; height: 34px; flex: none; }
+/* The mark is the display in miniature: a ÷ that is also a fraction, on the slate. */
+.top .mark .tile { fill: var(--disp); }
+.top .mark .bar { fill: var(--disp-ink); }
+.top .mark .top-dot { fill: var(--disp-accent); }
+.top .mark .bot-dot { fill: var(--disp-eq); }
+.top p { margin: 0; color: var(--muted); font-size: 15px; font-weight: 500; }
 @media (max-width: 840px) {
-  .app { grid-template-columns: minmax(0, 1fr); padding-top: 18px; }
+  .app { grid-template-columns: minmax(0, 1fr); padding: 22px 16px 48px; gap: 20px; }
   .calc { max-width: 480px; width: 100%; justify-self: center; }
+  .top { max-width: 480px; width: 100%; justify-self: center; }
+}
+/* Long steps scroll past; the calculator stays in reach. */
+@media (min-width: 841px) and (min-height: 860px) {
+  .calc { position: sticky; top: 24px; }
 }
 
 /* ---------- display ---------- */
 .display {
+  --ink: var(--disp-ink); --muted: var(--disp-muted); --line: var(--disp-line); --fn: var(--disp-fn);
+  --accent: var(--disp-accent); --err: var(--disp-err); --err-bg: var(--disp-err-bg);
   position: relative;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: var(--disp);
+  color: var(--ink);
   border-radius: var(--radius);
-  padding: 12px 16px 14px;
+  padding: 16px 22px 20px;
+  color-scheme: dark;
+  outline: 2px solid transparent; outline-offset: 4px;
+  transition: background-color .35s var(--ease-out), outline-color .15s;
 }
-.disp-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 30px; }
+.disp-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 10px; min-height: 32px; }
+.disp-top .seg { margin-left: auto; }
 .mode {
-  flex: none; border: 1px solid var(--line); background: var(--fn); color: var(--ink);
-  border-radius: 6px; padding: 3px 6px; cursor: pointer;
-  font: 700 11px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .04em;
+  flex: none; border: 0; background: var(--fn); color: var(--ink);
+  border-radius: 999px; padding: 6px 11px; cursor: pointer;
+  font: 700 12px/1 "Raleway", system-ui, sans-serif; letter-spacing: .06em;
+  transition: background-color .15s;
 }
-.ans-line { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.seg { display: inline-flex; background: var(--fn); border-radius: 9px; padding: 2px; flex: none; }
+.mode:hover { background: var(--line); }
+.ans-line { flex: 1 1 0; min-width: 0; font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seg { display: inline-flex; background: var(--fn); border-radius: 999px; padding: 3px; flex: none; }
 .seg button {
-  border: 0; background: transparent; padding: 4px 9px; border-radius: 7px;
-  font-size: 12.5px; color: var(--muted); cursor: pointer;
+  border: 0; background: transparent; padding: 5px 11px; border-radius: 999px;
+  font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer;
+  transition: background-color .2s var(--ease-out), color .2s;
 }
-.seg button[aria-pressed="true"] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); font-weight: 600; }
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--disp); font-weight: 700; }
 
 .expr {
-  font-size: 30px;
-  min-height: 78px;
-  padding: 6px 2px;
+  font-size: 32px;
+  font-weight: 500;
+  min-height: 92px;
+  padding: 10px 2px 6px;
   display: flex;
   align-items: center;
   overflow-x: auto;
@@ -132,20 +192,23 @@ kbd {
   scrollbar-width: thin;
 }
 .expr-in { display: inline-block; padding-right: 10px; }
-.ph { color: var(--muted); font-size: 18px; margin-left: 6px; }
-.hint { font-size: 12.5px; color: var(--muted); min-height: 19px; }
-.hint kbd { font-size: 11px; }
+.ph { color: var(--muted); font-size: 22px; font-weight: 400; margin-left: 8px; }
+.hint { font-size: 13.5px; color: var(--muted); min-height: 21px; line-height: 1.6; }
+.hint kbd { font-size: 11.5px; }
 
 .result {
-  font-size: 34px; font-weight: 650; text-align: right;
-  min-height: 58px; display: flex; justify-content: flex-end; align-items: center;
-  overflow-x: auto; white-space: nowrap; font-variant-numeric: tabular-nums;
-  border-top: 1px dashed var(--line); margin-top: 6px; padding-top: 6px;
+  font-size: 54px; font-weight: 300; letter-spacing: -.02em; text-align: right;
+  min-height: 80px; display: flex; justify-content: flex-end; align-items: center;
+  overflow-x: auto; white-space: nowrap; font-variant-numeric: lining-nums tabular-nums;
+  margin-top: 10px; padding-top: 4px;
+  transform-origin: right center;
 }
-.result.preview { color: var(--muted); font-weight: 500; font-size: 26px; }
-.result .eqsign { color: var(--muted); font-weight: 400; margin-right: .3em; }
-.result .err { font-size: 15px; font-weight: 500; color: var(--err); background: var(--err-bg); padding: 6px 10px; border-radius: 8px; white-space: normal; text-align: left; }
-.alt { text-align: right; color: var(--muted); font-size: 16px; min-height: 22px; overflow-x: auto; }
+.result:not(.preview):not(:empty) { animation: land .42s var(--ease-out); }
+@keyframes land { from { opacity: .35; transform: translateY(8px) scale(.94); } }
+.result.preview { color: var(--muted); font-weight: 400; font-size: 34px; letter-spacing: -.01em; }
+.result .eqsign { color: var(--muted); font-weight: 300; margin-right: .3em; }
+.result .err { font-size: 15px; font-weight: 600; letter-spacing: 0; color: var(--err); background: var(--err-bg); padding: 8px 14px; border-radius: 14px; white-space: normal; text-align: left; }
+.alt { text-align: right; color: var(--muted); font-size: 16px; font-weight: 500; min-height: 24px; overflow-x: auto; }
 .alt .fr { font-size: .85em; }
 
 /* ---------- math typesetting ---------- */
@@ -154,11 +217,13 @@ kbd {
   vertical-align: middle; text-align: center;
   margin: 0 .1em; font-size: .9em; line-height: 1.15;
 }
-.fr > .fr-n { border-bottom: max(1.5px, .065em) solid currentColor; padding: 0 .18em .05em; }
-.fr > .fr-d { padding: .05em .18em 0; }
+.fr > .fr-n { border-bottom: max(1.5px, .06em) solid currentColor; padding: 0 .18em .06em; }
+.fr > .fr-d { padding: .06em .18em 0; }
 .mx { display: inline-flex; align-items: center; vertical-align: middle; }
 .mx-gap { display: inline-block; width: .1em; }
 .op { margin: 0 .22em; }
+/* Raleway draws + − × ÷ = small and light; bring them up to the weight of the digits. */
+.ch.op, .ch.eqch { font-size: 1.14em; line-height: 1; }
 .op.un { margin: 0 .04em 0 0; }
 .ans { font-size: .78em; font-weight: 700; letter-spacing: .02em; color: var(--accent); }
 .ghost { opacity: .3; }
@@ -173,116 +238,144 @@ kbd {
 
 .slot { display: inline-block; vertical-align: middle; min-width: .55em; }
 .slot.empty {
-  min-height: .9em; border: 1.5px dashed var(--muted); border-radius: 3px; opacity: .65;
+  min-height: .9em; border: 1.5px dashed var(--muted); border-radius: 4px; opacity: .6;
   display: inline-flex; align-items: center; justify-content: center; padding: 0 .08em;
+  transition: border-color .15s, opacity .15s;
 }
-.slot.empty.on { border-color: var(--accent); opacity: 1; }
+.slot.empty.on { border-color: var(--accent); border-style: solid; opacity: 1; }
+.ch.eqch { margin: 0 .3em; }
 /* Repeating digits typed with \ : the bar sits over the box. */
 .repw > .slot { vertical-align: baseline; border-top: .06em solid currentColor; line-height: 1.05; }
 .repw > .slot.empty { border-top-style: solid; }
 .cur {
   display: inline-block; width: 2px; height: 1.05em; margin: 0 -1px;
-  background: var(--accent); vertical-align: middle; border-radius: 1px;
+  background: var(--accent); vertical-align: middle; border-radius: 2px;
   animation: blink 1.05s steps(1) .5s infinite;
 }
 @keyframes blink { 50% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .cur { animation: none; } }
 
-/* A key that does nothing on its own ([) is waiting for the rest of its shortcut: the display glows. */
-.display { transition: border-color .15s, box-shadow .15s; }
-.display.seq-wait {
-  border-color: color-mix(in srgb, var(--err) 55%, var(--line));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 14%, transparent), 0 0 22px color-mix(in srgb, var(--err) 22%, transparent);
-}
+/* Equation mode (X H): the slate turns teal, so it's obvious that = and y type into the expression. */
+.eqm .display { --disp: var(--disp-eqm); --accent: var(--disp-eq); }
+.mode.eqchip { background: var(--disp-eq); color: var(--disp-eqm); letter-spacing: .01em; }
+.mode.eqchip[hidden] { display: none; }
+.eqm .ch.eqch { color: var(--disp-eq); font-weight: 700; }
+.eqm .k[data-act="equals"] { background: var(--eq-bg); color: var(--eq); font-size: 34px; }
+.eqm .k[data-act="yvar"] { background: var(--eq-bg); color: var(--eq); outline: 1.5px solid var(--eq); outline-offset: -1.5px; }
+.k[data-act="eqmode"].on { background: var(--eq); color: var(--eq-ink); }
+.k[data-act="eqmode"].on small, .k[data-act="eqmode"].on .kb { color: var(--eq-ink); }
+
+/* A key that does nothing on its own ([) is waiting for the rest of its shortcut: the slate is ringed. */
+.display.seq-wait { outline-color: var(--disp-err); }
 
 /* ---------- keypad ---------- */
-.pad { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.pad { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
 .k {
-  position: relative; height: 58px; border: 0; border-radius: 12px;
-  background: var(--key); color: var(--ink); font-size: 21px;
-  box-shadow: 0 2px 0 var(--key-shadow), inset 0 0 0 1px var(--line);
+  position: relative; height: 62px; border: 0; border-radius: var(--key-radius);
+  background: var(--key); color: var(--ink); font-size: 24px; font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
   cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none;
   display: flex; align-items: center; justify-content: center; gap: 2px;
-  transition: transform .06s, box-shadow .06s;
+  transition: transform .26s var(--ease-out), background-color .15s, color .15s;
 }
-.k:active, .k.pressed { transform: translateY(2px); box-shadow: 0 0 0 var(--key-shadow), inset 0 0 0 1px var(--line); }
-.k.fn { background: var(--fn); font-size: 16px; }
-.k.op { background: var(--op); color: var(--op-ink); font-size: 24px; }
-.k.eq { background: var(--accent); color: var(--accent-ink); font-size: 26px; box-shadow: 0 2px 0 color-mix(in srgb, var(--accent) 60%, #000); }
-.k.danger { color: var(--err); font-weight: 600; }
+.k:hover { background: var(--key-hover); }
+.k:active, .k.pressed { transform: scale(.94); background: var(--key-press); transition-duration: .07s; }
+.k.fn { background: var(--key-fn); font-size: 17px; font-weight: 600; }
+.k.fn:hover { background: color-mix(in oklch, var(--key-fn), var(--ink) 6%); }
+.k.fn:active, .k.fn.pressed { background: color-mix(in oklch, var(--key-fn), var(--ink) 12%); }
+.k.op { background: var(--op); color: var(--op-ink); font-size: 34px; font-weight: 500; margin: 0; }
+.k.op:hover { background: color-mix(in oklch, var(--op), var(--op-ink) 10%); }
+.k.op:active, .k.op.pressed { background: color-mix(in oklch, var(--op), var(--op-ink) 18%); }
+.k.eq { background: var(--accent); color: var(--accent-ink); font-size: 38px; font-weight: 400; }
+.k.eq:hover { background: color-mix(in oklch, var(--accent), var(--ink) 12%); }
+.k.eq:active, .k.eq.pressed { background: color-mix(in oklch, var(--accent), var(--ink) 22%); }
+.k.danger { color: var(--err); font-weight: 700; }
 .k .kb {
-  position: absolute; top: 4px; right: 6px;
-  font: 600 10px/1 ui-monospace, "SF Mono", Menlo, monospace;
-  color: var(--muted); opacity: .85; pointer-events: none;
+  position: absolute; top: 6px; right: 11px;
+  font: 700 11px/1 "Raleway", system-ui, sans-serif; font-feature-settings: "lnum" 1;
+  color: var(--muted); opacity: .75; pointer-events: none;
 }
 .k.eq .kb { color: var(--accent-ink); opacity: .7; }
 .nohints .k .kb { display: none; }
-.k small { font-size: 11px; color: var(--muted); display: block; line-height: 1; }
-.k .stack { display: flex; flex-direction: column; align-items: center; gap: 3px; line-height: 1; }
+.k small { font-size: 11px; font-weight: 600; color: var(--muted); display: block; line-height: 1; letter-spacing: .01em; }
+.k .stack { display: flex; flex-direction: column; align-items: center; gap: 4px; line-height: 1; }
 .k .fr { font-size: 15px; }
-.box { display: inline-block; width: .62em; height: .62em; border: 1.5px solid currentColor; border-radius: 2px; vertical-align: middle; }
+.box { display: inline-block; width: .62em; height: .62em; border: 1.5px solid currentColor; border-radius: 3px; vertical-align: middle; }
 .box.big { width: .8em; height: .9em; margin-right: 1px; }
 .k.wide { grid-column: span 2; }
-.sci { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 14px; }
-.sci .k { font-size: 13px; }
+.sci { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; margin-top: 16px; }
 .k.on { background: var(--accent); color: var(--accent-ink); }
 .k.on small, .k.on .kb { color: var(--accent-ink); }
-.xv { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; font-style: italic; padding: 0 .04em; }
+.k.dim { opacity: .4; }
+.xv { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; font-style: italic; font-weight: 400; padding: 0 .04em; }
 .fxlabel { color: var(--muted); margin-right: .3em; font-size: .85em; }
 .alt .altnote { white-space: nowrap; }
-.alt .altnote b { font-weight: 500; color: var(--ink); }
-.graph-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.alt .altnote b { font-weight: 600; color: var(--ink); }
+.graph-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
 .graph-fns { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 17px; }
 .graph-fn { display: flex; align-items: center; gap: 8px; white-space: nowrap; overflow-x: auto; }
-.graph-fn { cursor: pointer; border-radius: 8px; padding: 2px 6px; margin: 0 -6px; }
-.graph-fn.sel { background: var(--fn); box-shadow: inset 3px 0 0 var(--accent); }
-.graph-fn .sw { width: 14px; height: 4px; border-radius: 2px; flex: none; }
+.graph-fn { cursor: pointer; border-radius: 10px; padding: 3px 8px; margin: 0 -8px; transition: background-color .15s; }
+.graph-fn.sel { background: var(--fn); }
+.graph-si { color: var(--muted); font-size: .85em; margin-left: .9em; }
+.graph-fn .sw { width: 16px; height: 4px; border-radius: 2px; flex: none; }
 .graph-fn button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0 4px; }
 .graph-btns { display: flex; gap: 6px; flex: none; }
-.graph-btns .btn { min-width: 34px; padding: 4px 10px; }
+.graph-btns .btn { min-width: 38px; padding: 6px 12px; }
 .graph-wrap { position: relative; }
-#graphCanvas { width: 100%; height: min(440px, 62vw); min-height: 260px; display: block; border-radius: 10px; border: 1px solid var(--line); touch-action: none; cursor: grab; }
+#graphCanvas { width: 100%; height: min(440px, 62vw); min-height: 260px; display: block; border-radius: 18px; border: 1px solid var(--line); touch-action: none; cursor: grab; }
 #graphCanvas.dragging { cursor: grabbing; }
-.graph-pts { margin-top: 12px; font-size: 16px; }
-.graph-pts h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
-.pt-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 6px 0; border-top: 1px solid var(--line); }
-.pt-title { color: var(--muted); font-size: 13.5px; min-width: 9em; }
-.pt-title small { opacity: .8; }
+.graph-pts { margin-top: 14px; font-size: 16px; }
+.graph-pts h4 { margin: 0 0 6px; font-size: 14px; font-weight: 700; color: var(--ink); }
+.pt-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 8px 0; border-top: 1px solid var(--line); }
+.pt-title { color: var(--muted); font-size: 14px; min-width: 9em; }
+.pt-title small { opacity: .85; }
 .pt { white-space: nowrap; }
-.pt-n { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
-  font: 700 11px/1 system-ui, sans-serif; background: var(--ink); color: var(--panel); margin-right: 4px; vertical-align: middle; }
+.pt-n { display: inline-flex; align-items: center; justify-content: center; width: 19px; height: 19px; border-radius: 50%;
+  font: 700 11px/1 "Raleway", system-ui, sans-serif; font-feature-settings: "lnum" 1; background: var(--ink); color: var(--panel); margin-right: 4px; vertical-align: middle; }
 .graph-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; color: var(--muted); pointer-events: none; font-size: 15px; }
-.sci .k { height: 40px; font-size: 14px; border-radius: 10px; box-shadow: 0 1px 0 var(--key-shadow), inset 0 0 0 1px var(--line); }
-.sci .k .kb { font-size: 9px; top: 3px; right: 4px; }
-.sci + .pad { margin-top: 8px; }
-.k .stack b { font-size: 13px; }
+.sci .k { height: 50px; padding-top: 9px; font-size: 14px; font-weight: 600; border-radius: 16px; background: var(--key-fn); }
+.sci .k:hover { background: color-mix(in oklch, var(--key-fn), var(--ink) 6%); }
+.sci .k:active, .sci .k.pressed { background: color-mix(in oklch, var(--key-fn), var(--ink) 12%); }
+.sci .k.on { background: var(--accent); }
+.sci .k[data-act="eqmode"].on { background: var(--eq); }
+.sci .k .kb { top: 5px; right: 8px; }
+.sci + .pad { margin-top: 10px; }
+.k .stack b { font-size: 13px; font-weight: 700; }
 .k .sup .box { width: .7em; height: .7em; }
 .k .rt { font-size: 18px; }
 .navpad { grid-row: span 3; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 6px; }
-.navpad .k { height: auto; font-size: 16px; border-radius: 10px; background: var(--fn); }
+.navpad .k { height: auto; font-size: 17px; border-radius: 16px; background: var(--key-fn); }
+.navpad .k:hover { background: color-mix(in oklch, var(--key-fn), var(--ink) 6%); }
 .navpad [data-act="up"], .navpad [data-act="down"] { grid-column: span 2; }
 .navpad .k .kb { display: none; }
 
 /* ---------- side panel ---------- */
 .side {
-  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel); border-radius: var(--radius);
   min-height: 420px; overflow: hidden;
 }
-.tabs { display: flex; border-bottom: 1px solid var(--line); padding: 0 8px; }
+.tabs { display: flex; gap: 4px; padding: 12px 12px 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
 .tab {
-  border: 0; background: none; padding: 12px 12px 10px; cursor: pointer; color: var(--muted);
-  border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 550;
+  position: relative; border: 0; background: none; padding: 12px 14px 14px; cursor: pointer; color: var(--muted);
+  font-size: 15px; font-weight: 600; transition: color .15s;
 }
-.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
-.panel { padding: 16px 18px 20px; }
+.tab::after {
+  content: ""; position: absolute; left: 14px; right: 14px; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0;
+  background: var(--accent); transform: scaleX(0); transition: transform .3s var(--ease-out);
+}
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--ink); font-weight: 700; }
+.tab[aria-selected="true"]::after { transform: scaleX(1); }
+.panel { padding: 22px 26px 26px; }
+.panel:not([hidden]) { animation: rise .32s var(--ease-out); }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
 .panel[hidden] { display: none; }
 
-.legend { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 12px; }
+.legend { font-size: 13.5px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 14px; }
 .legend .arrow { opacity: .6; }
 .tag {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 2.3em; padding: 1px 6px; border-radius: 6px;
-  font: 700 11.5px/1.5 ui-monospace, "SF Mono", Menlo, monospace; white-space: nowrap;
+  min-width: 2.3em; padding: 2px 8px; border-radius: 999px;
+  font: 700 12px/1.5 "Raleway", system-ui, sans-serif; font-feature-settings: "lnum" 1; white-space: nowrap;
 }
 .t-paren { background: var(--tag-paren); color: var(--tag-paren-ink); }
 .t-pow { background: var(--tag-pow); color: var(--tag-pow-ink); }
@@ -293,74 +386,124 @@ kbd {
 .t-rw { background: var(--fn); color: var(--muted); }
 
 .steps { list-style: none; margin: 0; padding: 0; }
-.steps li.line { display: grid; grid-template-columns: 1.3em minmax(0, 1fr); align-items: center; }
-.steps .eqs { color: var(--muted); font-size: 20px; }
-.steps .sx { font-size: 22px; overflow-x: auto; white-space: nowrap; padding: 4px 2px; }
+.steps li.line { display: grid; grid-template-columns: 1.4em minmax(0, 1fr); align-items: center; }
+.steps .eqs { color: var(--muted); font-size: 22px; font-weight: 400; }
+.steps .sx { font-size: 24px; font-weight: 500; overflow-x: auto; white-space: nowrap; padding: 5px 2px; }
 .steps li.why {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  font-size: 13.5px; color: var(--muted); padding: 2px 0 2px 1.3em;
+  font-size: 14px; color: var(--muted); padding: 3px 0 3px 1.4em;
 }
-.steps li.why::before { content: "↓"; opacity: .6; margin-left: -1.1em; width: 1em; }
+.steps li.why::before { content: "↓"; opacity: .6; margin-left: -1.2em; width: 1em; }
 .steps li.why .fr { font-size: .95em; }
-.hl { background: var(--hl); color: var(--hl-ink); border-radius: 5px; box-shadow: 0 0 0 3px var(--hl); }
-.steps .final .sx { font-weight: 650; }
-.msg { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
-.msg.err { color: var(--err); background: var(--err-bg); padding: 8px 12px; border-radius: 8px; }
-.empty-state { color: var(--muted); font-size: 15px; }
-.empty-state .ex { font-size: 22px; color: var(--ink); margin: 10px 0 14px; }
+.hl { background: var(--hl); color: var(--hl-ink); border-radius: 6px; box-shadow: 0 0 0 3px var(--hl); }
+.steps .final .sx { font-weight: 700; }
+/* Forms of a line or parabola, and systems, under the steps */
+.extra { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 16px; }
+.extra h4 { margin: 0 0 8px; font-size: 14px; font-weight: 700; color: var(--ink); }
+.form-row { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); gap: 10px; align-items: center; padding: 5px 0; }
+.form-name { font-size: 13.5px; font-weight: 600; color: var(--muted); }
+.form-name small { display: block; font-size: 12px; font-weight: 500; }
+.form-eq { font-size: 19px; font-weight: 500; overflow-x: auto; white-space: nowrap; padding: 2px; }
+.form-eq.none { font-size: 14px; color: var(--muted); white-space: normal; }
+.facts { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 14px; color: var(--muted); margin: 8px 0 2px; }
+.facts span > b { color: var(--ink); font-weight: 700; }
+.extra details { margin-top: 10px; font-size: 14px; }
+.extra summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+.extra .steps .sx { font-size: 19px; }
+.extra .steps li.why { flex-wrap: nowrap; align-items: baseline; }
+.sys + .sys { margin-top: 16px; }
+.sys-title { font-size: 14px; font-weight: 700; margin: 4px 0; }
+.sys-ans { margin: 6px 0 0; font-size: 15px; }
+.sys-ans b { font-weight: 700; }
+@media (max-width: 520px) { .form-row { grid-template-columns: 1fr; gap: 0; } }
+.msg { margin: 16px 0 0; font-size: 14px; color: var(--muted); line-height: 1.6; }
+.msg.err { color: var(--err); background: var(--err-bg); padding: 10px 14px; border-radius: 14px; }
+.empty-state { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 62ch; margin: 0; }
+.empty-state .ex { font-size: 26px; font-weight: 500; color: var(--ink); margin: 14px 0 18px; }
 .empty-state ul { padding-left: 18px; margin: 8px 0 0; }
-.empty-state li { margin: 4px 0; }
+.empty-state li { margin: 6px 0; }
+.empty-state li::marker { color: var(--accent); }
 
 .hist { list-style: none; margin: 0; padding: 0; }
 .hist li + li { border-top: 1px solid var(--line); }
 .hist button {
   width: 100%; border: 0; background: none; text-align: left; cursor: pointer;
-  padding: 10px 6px; border-radius: 8px; display: flex; align-items: center; gap: 10px;
-  font-size: 19px; overflow-x: auto; white-space: nowrap;
+  padding: 12px 10px; border-radius: 14px; display: flex; align-items: center; gap: 10px;
+  font-size: 19px; font-weight: 500; overflow-x: auto; white-space: nowrap;
+  transition: background-color .15s;
 }
 .hist button:hover { background: var(--fn); }
-.hist .res { margin-left: auto; font-weight: 650; padding-left: 12px; }
-.hist .res .eqs { color: var(--muted); font-weight: 400; }
-.textbtn { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 4px 0; font-size: 14px; }
-.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.hist .res { margin-left: auto; font-weight: 700; padding-left: 12px; }
+.hist .res .eqs { color: var(--muted); font-weight: 300; }
+.textbtn { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 4px 0; font-size: 14px; font-weight: 600; }
+.textbtn:hover { text-decoration: underline; text-underline-offset: 3px; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
 .panel-head p { margin: 0; color: var(--muted); font-size: 14px; }
 
 /* ---------- keybinds ---------- */
-.kb-group h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 6px; }
-.kb-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); }
+.kb-group h3 { font-size: 15px; font-weight: 700; color: var(--ink); margin: 24px 0 6px; }
+.kb-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
 .kb-row:first-of-type { border-top: 0; }
 .kb-name { font-size: 15px; }
 .kb-keys { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; }
 .chip { display: inline-flex; align-items: center; gap: 2px; }
 .chip button { border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 4px; font-size: 15px; line-height: 1; }
 .chip button:hover { color: var(--err); }
-.kb-add { border: 1px dashed var(--line); background: none; border-radius: 6px; padding: 2px 8px; font-size: 12.5px; color: var(--muted); cursor: pointer; }
+.kb-add { border: 1px dashed var(--line); background: none; border-radius: 999px; padding: 3px 10px; font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer; transition: color .15s, border-color .15s; }
 .kb-add:hover { color: var(--accent); border-color: var(--accent); }
-.listening { font-size: 13px; color: var(--accent); font-weight: 600; animation: pulse 1s ease-in-out infinite; }
+.listening { font-size: 13px; color: var(--accent); font-weight: 700; animation: pulse 1s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .45; } }
-.check { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
-.btn { border: 1px solid var(--line); background: var(--fn); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 14px; }
+.check { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; }
+.check input { accent-color: var(--accent); width: 16px; height: 16px; }
+.btn { border: 0; background: var(--fn); border-radius: 999px; padding: 7px 14px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background-color .15s, transform .2s var(--ease-out); }
+.btn:hover { background: color-mix(in oklch, var(--fn), var(--ink) 8%); }
+.btn:active { transform: scale(.96); }
 
 .toast {
-  position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px);
-  background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px;
-  font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+  position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px);
+  background: var(--ink); color: var(--bg); padding: 11px 18px; border-radius: 18px;
+  font-size: 14px; font-weight: 600; text-align: center; opacity: 0; pointer-events: none;
+  transition: opacity .25s var(--ease-out), transform .35s var(--ease-out);
+  box-shadow: 0 10px 30px oklch(0 0 0 / .18);
   max-width: calc(100vw - 32px);
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 .shake { animation: shake .3s; }
 @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+/* First paint: the header, then the slate, then the keys, then the steps. */
+.top, .display, .sci, .pad, .side { animation: enter .6s var(--ease-out) backwards; }
+.display { animation-delay: .06s; }
+.sci { animation-delay: .12s; }
+.pad { animation-delay: .16s; }
+.side { animation-delay: .22s; }
+@keyframes enter { from { opacity: 0; transform: translateY(14px); } }
+
+@media (max-width: 520px) {
+  .sci { gap: 5px; }
+  .sci .k { height: 42px; font-size: 12.5px; letter-spacing: -.01em; padding: 0; border-radius: 14px; }
+  .sci .k .kb, .sci .k small { display: none; }
+  .panel { padding: 18px 18px 22px; }
+}
 @media (max-width: 420px) {
-  .k { height: 52px; }
-  .expr { font-size: 26px; }
-  .seg button { padding: 4px 7px; }
+  .k { height: 54px; border-radius: 18px; }
+  .pad { gap: 8px; }
+  .expr { font-size: 28px; min-height: 76px; }
+  .result { font-size: 46px; min-height: 66px; }
+  .result.preview { font-size: 30px; }
+  .display { padding: 14px 18px 18px; }
+  .seg button { padding: 5px 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .cur { animation: none; }
 }
 </style>
 </head>
 <body>
 <div class="app" id="app">
   <header class="top">
-    <h1>Calculator</h1>
+    <h1><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect class="tile" width="32" height="32" rx="9"/><circle class="top-dot" cx="16" cy="9.2" r="3.6"/><rect class="bar" x="6.5" y="14.6" width="19" height="2.8" rx="1.4"/><circle class="bot-dot" cx="16" cy="22.8" r="3.6"/></svg>Calculator</h1>
     <p>Exact answers, order of operations shown step by step, and keys you can remap.</p>
   </header>
 
@@ -368,6 +511,7 @@ kbd {
     <section class="display" aria-label="Calculator display">
       <div class="disp-top">
         <button type="button" class="mode" id="angleBadge" title="Degrees or radians (click to switch)"></button>
+        <button type="button" class="mode eqchip" id="eqChip" title="Equation mode is on (click to leave)" hidden>Equation mode</button>
         <span class="ans-line" id="ansLine"></span>
         <div class="seg" role="group" aria-label="Answer format">
           <button type="button" data-view="frac">Fraction</button>
@@ -1118,7 +1262,11 @@ function xTermHTML(c, k, view) {
 function polyHTML(v, view) {
   if (!isPoly(v)) return valueHTML(v, view);
   let s = '';
-  v.px.forEach((m, i) => {
+  // A constant like 1 + √2 is written term by term, so x − (1 + √2) reads x − 1 − √2.
+  const px = v.px.flatMap(m => (m.k === 0 && radIsSum(m.c) && view !== 'dec' && m.c.t.every(t => typeof t.r === 'bigint')
+    ? [...m.c.t].sort((p, q) => (p.r === 1n ? 0 : 1) - (q.r === 1n ? 0 : 1)).map(t => ({ k: 0, c: t.r === 1n ? t.c : { c: t.c, r: t.r, k: 2n } }))
+    : [m]));
+  px.forEach((m, i) => {
     const { neg, html } = xTermHTML(m.c, m.k, view);
     s += i === 0 ? (neg ? MINUS : '') + html : `<span class="op">${neg ? MINUS : '+'}</span>${html}`;
   });
@@ -1471,6 +1619,7 @@ function tokenize(arr) {
         out.push({ k: 'num', s });
       }
     } else if (it.t === 'c') {
+      if (it.v === '=') throw new CalcError('An = goes between the two sides of an equation, not inside a box.');
       out.push(it.v === '(' || it.v === ')' ? { k: it.v } : { k: 'op', v: it.v });
     } else if (it.t === 'ans') {
       out.push({ k: 'ans' });
@@ -1500,8 +1649,8 @@ function tokenize(arr) {
       }
     } else if (it.t === 'pi') {
       out.push({ k: 'pi' });
-    } else if (it.t === 'x') {
-      out.push({ k: 'x' });
+    } else if (it.t === 'x' || it.t === 'y') {
+      out.push({ k: it.t });
     }
   }
   return out;
@@ -1512,7 +1661,7 @@ function parseArr(arr) {
   let p = 0;
   const peek = () => t[p];
   const isOp = (tk, ...vs) => tk && tk.k === 'op' && vs.includes(tk.v);
-  const startsPrimary = tk => tk && ['num', 'ans', 'frac', 'mixed', 'root', 'fn', 'pi', 'x', '('].includes(tk.k);
+  const startsPrimary = tk => tk && ['num', 'ans', 'frac', 'mixed', 'root', 'fn', 'pi', 'x', 'y', '('].includes(tk.k);
 
   function expr() {
     let a = term();
@@ -1565,6 +1714,7 @@ function parseArr(arr) {
       }
       case 'pi': return { k: 'pi' };
       case 'x': return { k: 'x' };
+      case 'y': return { k: 'y' };
       case 'pow': throw new CalcError('An exponent needs a number in front of it.');
       case '(': {
         if (peek() && peek().k === ')') throw new CalcError('The parentheses ( ) are empty.');
@@ -1610,6 +1760,9 @@ function norm(n, notes) {
     case 'num': return n;
     case 'pi': return num(mkPi(Q(1n)));
     case 'x': return num(E.xval !== undefined ? E.xval : X_POLY); // xval: evaluate at an exact x
+    case 'y': // only inside an equation, which tries a few values of y to solve for it
+      if (E.yval === undefined) throw new CalcError('y is for equations: type = and the other side');
+      return num(Q(BigInt(E.yval)));
     case 'fn': {
       const a = norm(n.a, notes);
       return a === n.a ? n : { ...n, a };
@@ -1949,6 +2102,7 @@ function prRaw(n, hl) {
     case 'root': return rootHTML(pr(n.a, hl), n.b ? pr(n.b, hl) : null);
     case 'pi': return 'π';
     case 'x': return '<i class="xv">x</i>';
+    case 'y': return '<i class="xv">y</i>';
     case 'fn': return fnHTML(n, hl);
     case 'bin': {
       if (n.bar) return fr(pr(n.a, hl), pr(n.b, hl));
@@ -1960,7 +2114,7 @@ function prRaw(n, hl) {
         return wrap ? `(${s})` : s;
       };
       const L = side(n.a, false), R = side(n.b, true);
-      const juxtapose = ['grp', 'root', 'pi', 'fn'].includes(n.b.k) || (n.b.style === 'irr' && exactIn(n.b.v, E.view));
+      const juxtapose = ['grp', 'root', 'pi', 'fn', 'x', 'y'].includes(n.b.k) || (n.b.style === 'irr' && exactIn(n.b.v, E.view));
       if (n.imp && juxtapose) return L + R; // 2(3+4), 2√3, 2π, 2sin(30°)
       return `${L}<span class="op">${OPS[n.op]}</span>${R}`;
     }
@@ -2003,6 +2157,13 @@ const productShape = n => n.k === 'pow' || (n.k === 'bin' && n.op === '*') || ((
 
 function solve(items, opts) {
   E = opts;
+  const eqAt = items.findIndex(isEqSign);
+  if (eqAt >= 0) {
+    try { return solveEquation(items, eqAt, opts); } catch (e) {
+      if (e instanceof CalcError) return { lines: [], error: e.message, notPoly: e instanceof NotPolyError };
+      throw e;
+    }
+  }
   const lines = [];
   const push = (ast, note, tag) => { const h = pr(ast); lines.push({ key: h, html: h, note, tag, approx: hasApprox(ast) }); };
   let product = false;
@@ -2031,6 +2192,298 @@ function solve(items, opts) {
   }
 }
 
+// ---------- lines and parabolas: every form, and where two of them meet ----------
+const XV = '<i class="xv">x</i>', YV = '<i class="xv">y</i>', SQ = '<sup class="sup">2</sup>';
+const evalAt = (v, x) => (isPoly(v) ? dense(v).reduceRight((acc, c) => opV('+', opV('*', acc, x), c), Q(0n)) : v);
+const isOne = v => isQ(v) && v.n === 1n && v.d === 1n;
+const isMinusOne = v => isQ(v) && v.n === -1n && v.d === 1n;
+const leadHTML = (a, view) => (isOne(a) ? '' : isMinusOne(a) ? MINUS : valueHTML(a, view));
+const ptHTML = (x, y, view) => `(${valueHTML(x, view)}, ${valueHTML(y, view)})`;
+// "2x − 3y", "y − 4": coefficients times variables; a blank variable is a plain number.
+function linHTML(terms, view) {
+  return terms.filter(t => !isZero(t.c)).map((t, i) => {
+    const neg = signV(t.c) < 0, a = neg ? negV(t.c) : t.c;
+    const body = t.v && isOne(a) ? t.v : valueHTML(a, view) + t.v;
+    return i ? `<span class="op">${neg ? MINUS : '+'}</span>${body}` : (neg ? MINUS : '') + body;
+  }).join('') || '0';
+}
+// " + 5 − 9": numbers tacked on after a bracket
+const tailHTML = (vals, view) => vals.filter(v => !isZero(v))
+  .map(v => `<span class="op">${signV(v) < 0 ? MINUS : '+'}</span>${valueHTML(signV(v) < 0 ? negV(v) : v, view)}`).join('');
+const vertexHTML = (a, h, k, view) => leadHTML(a, view)
+  + (isZero(h) ? XV + SQ : `(${linHTML([{ c: Q(1n), v: XV }, { c: negV(h), v: '' }], view)})${SQ}`) + tailHTML([k], view);
+const formRow = (name, eq, cls = '') => `<div class="form-row"><span class="form-name">${name}</span><span class="form-eq${cls}">${eq}</span></div>`;
+const factsHTML = fs => `<div class="facts">${fs.map(([k, v]) => `<span>${k}: <b>${v}</b></span>`).join('')}</div>`;
+const miniSteps = lines => '<ol class="steps">' + lines.map(([why, eq]) => (why ? `<li class="why"><span>${why}</span></li>` : '')
+  + `<li class="line"><span class="eqs"></span><span class="sx">${eq}</span></li>`).join('') + '</ol>';
+// Degree 1 or 2 with fraction coefficients (no holes): the polynomial's coefficients, else null.
+const lowPoly = v => (v && isPoly(v) && allQ(v) && !holesOf(v).length && v.px[0].k <= 2 ? dense(v) : null);
+
+// A line y = mx + b as standard form Ax + By = C in whole numbers, A ≥ 0 (B > 0 when A is 0).
+function stdForm(m, b) {
+  const L = lcm(m.d, b.d);
+  let A = -m.n * (L / m.d), B = L, C = b.n * (L / b.d);
+  if (A < 0n) { A = -A; B = -B; C = -C; }
+  const g = gcd(gcd(A, B), C) || 1n;
+  return { A: A / g, B: B / g, C: C / g };
+}
+const stdHTML = ({ A, B, C }, view) => `${linHTML([{ c: Q(A), v: XV }, { c: Q(B), v: YV }], view)} = ${valueHTML(Q(C), view)}`;
+// The same in plain text, for the graph: "2x + 3y = 6", "y = 4", "2x = 3".
+function stdText({ A, B, C }) {
+  const num = n => (n < 0n ? MINUS + -n : String(n));
+  const terms = [[A, 'x'], [B, 'y']].filter(t => t[0] !== 0n).map(([c, v], i) => {
+    const a = abs(c), body = (a === 1n ? '' : String(a)) + v;
+    return i ? ` ${c < 0n ? MINUS : '+'} ${body}` : (c < 0n ? MINUS : '') + body;
+  });
+  return `${terms.join('')} = ${num(C)}`;
+}
+// Where Ax + By = C crosses each axis: set the other letter to 0 and solve.
+function interceptRows({ A, B, C }, view) {
+  const row = (name, other, a, b, onAxis, flat, pt) => {
+    if (a === 0n) return formRow(`${name}<small>where ${other} = 0</small>`, C === 0n ? `Every point: the line is the ${onAxis}` : `None: the line is parallel to the ${flat}, so it never crosses it`, ' none');
+    const v = Q(C, a);
+    return formRow(`${name}<small>where ${other} = 0</small>`,
+      `${linHTML([{ c: Q(a), v: b }], view)} = ${valueHTML(Q(C), view)}${a === 1n ? '' : `<span class="op">→</span>${b} = ${valueHTML(v, view)}`}<span class="op">→</span><b>${pt(v)}</b>`);
+  };
+  return row(`${XV}-intercept`, YV, A, XV, `${XV}-axis`, `${XV}-axis`, v => ptHTML(v, Q(0n), view))
+    + row(`${YV}-intercept`, XV, B, YV, `${YV}-axis`, `${YV}-axis`, v => ptHTML(Q(0n), v, view));
+}
+// One line for the display: "x-intercept (3, 0) · y-intercept (0, 2)".
+function interceptsAlt({ A, B, C }, view) {
+  const one = (name, a, axis, pt) => `<span class="altnote">${name} <b>${a === 0n ? (C === 0n ? `the whole ${axis}` : 'none') : pt(Q(C, a))}</b></span>`;
+  return one(`${XV}-intercept`, A, `${XV}-axis`, v => ptHTML(v, Q(0n), view)) + ' · '
+    + one(`${YV}-intercept`, B, `${YV}-axis`, v => ptHTML(Q(0n), v, view));
+}
+
+function lineForms(m, b, view) {
+  const x1 = Q(1n), y1 = opV('+', m, b), flat = isZero(m), std = stdForm(m, b);
+  return '<h4>Forms of this line</h4>'
+    + formRow('Slope-intercept<small><i class="xv">y</i> = <i class="xv">m</i><i class="xv">x</i> + <i class="xv">b</i></small>', `${YV} = ${flat ? valueHTML(b, view) : polyHTML(undense([b, m]), view)}`)
+    + formRow('Standard<small><i class="xv">A</i><i class="xv">x</i> + <i class="xv">B</i><i class="xv">y</i> = <i class="xv">C</i></small>', stdHTML(std, view))
+    + (flat ? '' : formRow(`Point-slope<small>through ${ptHTML(x1, y1, view)}</small>`,
+      `${linHTML([{ c: Q(1n), v: YV }, { c: negV(y1), v: '' }], view)} = ${leadHTML(m, view)}(${linHTML([{ c: Q(1n), v: XV }, { c: negV(x1), v: '' }], view)})`))
+    + factsHTML([['slope', `${valueHTML(m, view)}${flat ? ' (a flat line)' : ''}`]])
+    + interceptRows(std, view);
+}
+// x = c: no slope, so standard form is the only form.
+function verticalForms(c, view) {
+  const std = { A: c.d, B: 0n, C: c.n };
+  return '<h4>Forms of this line</h4>'
+    + formRow('Standard<small><i class="xv">A</i><i class="xv">x</i> + <i class="xv">B</i><i class="xv">y</i> = <i class="xv">C</i></small>', stdHTML(std, view))
+    + formRow('Slope-intercept', 'None: a vertical line has no slope, so it can’t be written as <i class="xv">y</i> = <i class="xv">m</i><i class="xv">x</i> + <i class="xv">b</i>.', ' none')
+    + factsHTML([['slope', 'undefined (straight up and down)']])
+    + interceptRows(std, view);
+}
+
+function parabolaForms(v, view) {
+  const [c, b, a] = dense(v);
+  const h = opV('/', negV(b), opV('*', Q(2n), a)), k = evalAt(v, h);
+  const D = opV('-', opV('*', b, b), opV('*', Q(4n), opV('*', a, c)));
+  const fac = signV(D) >= 0 ? factorHTML(v, view) : null;
+  const up = signV(a) > 0;
+  let h1 = '<h4>Forms of this parabola</h4>'
+    + formRow('Standard<small><i class="xv">y</i> = <i class="xv">a</i><i class="xv">x</i>² + <i class="xv">b</i><i class="xv">x</i> + <i class="xv">c</i></small>', `${YV} = ${polyHTML(v, view)}`)
+    + formRow('Vertex<small><i class="xv">y</i> = <i class="xv">a</i>(<i class="xv">x</i> − <i class="xv">h</i>)² + <i class="xv">k</i></small>', `${YV} = ${vertexHTML(a, h, k, view)}`)
+    + (fac ? formRow('Factored<small><i class="xv">y</i> = <i class="xv">a</i>(<i class="xv">x</i> − <i class="xv">r</i>)(<i class="xv">x</i> − <i class="xv">s</i>)</small>', `${YV} = ${fac}`)
+      : formRow('Factored', 'No real roots, so it doesn’t factor with real numbers.', ' none'));
+  const roots = rootsHTML(v, view);
+  h1 += factsHTML([
+    ['vertex', ptHTML(h, k, view)],
+    ['axis of symmetry', `${XV} = ${valueHTML(h, view)}`],
+    [up ? 'opens up · minimum' : 'opens down · maximum', `${YV} = ${valueHTML(k, view)}`],
+    ['<i class="xv">y</i>-intercept', ptHTML(Q(0n), c, view)],
+    ['discriminant <i class="xv">b</i>² − 4<i class="xv">a</i><i class="xv">c</i>', `${valueHTML(D, view)} → ${signV(D) > 0 ? 'two real roots' : isZero(D) ? 'one repeated root' : 'no real roots'}`],
+    ['roots', `${XV} = ${roots}`],
+  ]);
+  if (!isZero(b)) { // completing the square
+    const p = opV('/', b, a), half = opV('/', p, Q(2n)), sq = opV('*', half, half), t = opV('*', a, sq), lead = leadHTML(a, view);
+    const lines = [[null, `${YV} = ${polyHTML(v, view)}`]];
+    if (!isOne(a)) lines.push([`Take ${valueHTML(a, view)} out of the ${XV} terms`, `${YV} = ${lead}(${polyHTML(undense([Q(0n), p, Q(1n)]), view)})${tailHTML([c], view)}`]);
+    lines.push([`Half of ${valueHTML(p, view)} is ${valueHTML(half, view)}, squared is ${valueHTML(sq, view)}: add it inside the bracket${isOne(a) ? ', and take it away again' : `, and take away ${valueHTML(a, view)} × ${valueHTML(sq, view)} outside`}`,
+      `${YV} = ${lead}(${polyHTML(undense([sq, p, Q(1n)]), view)})${tailHTML([c, negV(t)], view)}`]);
+    lines.push(['The bracket is a perfect square', `${YV} = ${lead}(${linHTML([{ c: Q(1n), v: XV }, { c: half, v: '' }], view)})${SQ}${tailHTML([c, negV(t)], view)}`]);
+    if (!isZero(c) && !isZero(t)) lines.push(['Combine the numbers', `${YV} = ${vertexHTML(a, h, k, view)}`]);
+    h1 += `<details><summary>How to get the vertex form (completing the square)</summary>${miniSteps(lines)}</details>`;
+  }
+  return h1;
+}
+
+function formsHTML(v, view, eq) {
+  if (eq && eq.vertical && isQ(eq.vertical)) return `<section class="extra">${verticalForms(eq.vertical, view)}</section>`;
+  if (eq && eq.kind === 'y' && v && isQ(v)) return `<section class="extra">${lineForms(Q(0n), v, view)}</section>`;
+  const cs = lowPoly(v);
+  if (!cs) return '';
+  return `<section class="extra">${cs.length === 2 ? lineForms(cs[1], cs[0], view) : parabolaForms(v, view)}</section>`;
+}
+
+// Solving d = 0 for x by hand: lines of working [why, html], the exact real answers, and a note
+// for anything else (complex answers, or decimals when there's no exact form).
+const orList = xs => xs.map(x => `${XV} = ${x}`).join(' &ensp;or&ensp; ');
+function solveZero(d, view) {
+  const lines = [], xs = [];
+  let other = [];
+  if (d.px[0].k === 2 && signV(d.px[0].c) < 0) { // −x² − x + 6 = 0 → x² + x − 6 = 0
+    d = negV(d);
+    lines.push(['Multiply both sides by −1', `${polyHTML(d, view)} = 0`]);
+  }
+  const cs = dense(d), deg = cs.length - 1;
+  if (deg === 1) {
+    const [q, p] = cs, x = opV('/', negV(q), p);
+    if (!isZero(q)) lines.push([`${signV(q) > 0 ? 'Subtract' : 'Add'} ${valueHTML(signV(q) > 0 ? q : negV(q), view)} on both sides`, `${linHTML([{ c: p, v: XV }], view)} = ${valueHTML(negV(q), view)}`]);
+    if (!isOne(p)) lines.push([isMinusOne(p) ? 'Multiply both sides by −1' : `Divide both sides by ${valueHTML(p, view)}`, `${XV} = ${valueHTML(x, view)}`]);
+    xs.push(x);
+  } else if (!cs.every(isQ)) { // coefficients like √2: decimals
+    const z = cleanRoots(numRoots(cs.map(toF)));
+    other = z.map(r => `${XV} ≈ ${r.im ? `${r.re ? fmtFloat(r.re, 5) + ' ' : ''}±&thinsp;${fmtFloat(r.im, 5)}<i>i</i>` : fmtFloat(r.re, 5)}`);
+    lines.push(['There’s no tidy exact answer, so here are decimals', other.join(' &ensp;or&ensp; ')]);
+  } else {
+    const f = factorQ(cs), real = f.roots.map(r => r.r);
+    const cplx = f.cplx.map(z => `${XV} = ${z.mult ? `${valueHTML(z.mult, view)}·(${pairHTML(z.re, z.im, view)})` : pairHTML(z.re, z.im, view)}`);
+    const approxReal = f.approx.filter(z => !z.im).map(z => `${XV} ≈ ${fmtFloat(z.re, 5)}`);
+    const approxCplx = f.approx.filter(z => z.im).map(z => `${XV} ≈ ${z.re ? fmtFloat(z.re, 5) + ' ' : ''}±&thinsp;${fmtFloat(z.im, 5)}<i>i</i>`);
+    if (deg === 2 && !(real.every(isQ) && real.length)) { // the quadratic formula
+      const L = cs.reduce((l, c) => lcm(l, c.d), 1n);
+      let ints = cs.map(c => c.n * (L / c.d)), g = 0n;
+      for (const n of ints) g = gcd(g, n);
+      if (ints[2] < 0n) g = -g;
+      ints = ints.map(n => n / g);
+      const [C, B, A] = ints, Dn = B * B - 4n * A * C;
+      if (!(L === 1n && g === 1n)) lines.push(['Same equation with whole numbers', `${polyHTML(undense(ints.map(n => Q(n))), view)} = 0`]);
+      lines.push([`Quadratic formula with <i class="xv">a</i> = ${A}, <i class="xv">b</i> = ${String(B).replace('-', MINUS)}, <i class="xv">c</i> = ${String(C).replace('-', MINUS)}`,
+        `${XV} = ${fr(`${B === 0n ? '±' : `${valueHTML(Q(-B), view)}<span class="op">±</span>`}${rootHTML(String(Dn).replace('-', MINUS))}`, String(2n * A))}`]);
+      if (Dn < 0n) lines.push(['The number under the root is negative, so there are no real answers', cplx.join(' &ensp;or&ensp; ')]);
+      else lines.push(['Simplify', orList(real.map(r => valueHTML(r, view)))]);
+    } else {
+      const fh = polyFactorHTML(d, view);
+      if (fh !== polyHTML(d, view)) lines.push(['Factor', `${fh} = 0`]);
+      if (real.length) lines.push([real.length === 1 && deg === 2 ? 'Both brackets are the same, so there’s one answer' : 'One of the brackets has to be 0', orList(real.map(r => valueHTML(r, view)))]);
+      if (approxReal.length) lines.push(['No exact form for the rest, so here are decimals', approxReal.join(' &ensp;or&ensp; ')]);
+    }
+    xs.push(...real);
+    other = [...approxReal, ...cplx, ...approxCplx];
+  }
+  return { lines, xs, other };
+}
+
+// Solving f(x) = g(x) for lines and parabolas, the way it's done by hand.
+function solvePair(F, G, nF, nG, view) {
+  const d = opV('-', F, G);
+  const lines = [[null, `${polyHTML(F, view)} = ${polyHTML(G, view)}`]];
+  let xs = [], verdict = null;
+  if (!isPoly(d)) {
+    lines.push(['Move everything to one side', `${valueHTML(d, view)} = 0`]);
+    verdict = isZero(d) ? 'Always true: they’re the same, so every point on them is a solution.'
+      : 'Never true: they never meet, so there’s no solution' + (lowPoly(F)?.length === 2 && lowPoly(G)?.length === 2 ? ' (the lines are parallel).' : '.');
+  } else {
+    if (!isZero(G)) lines.push(['Move everything to one side', `${polyHTML(d, view)} = 0`]);
+    const z = solveZero(d, view);
+    lines.push(...z.lines);
+    xs = z.xs;
+    if (xs.length) {
+      lines.push([`Put ${xs.length > 1 ? 'each' : 'it'} into ${nF} to get ${YV}`, xs.map(x => `${nF.replace(XV, valueHTML(x, view))} = ${valueHTML(evalAt(F, x), view)}`).join(' &ensp; ')]);
+      verdict = `${xs.length > 1 ? 'Solutions' : 'Solution'}: <b>${xs.map(x => ptHTML(x, evalAt(F, x), view)).join(' and ')}</b>`;
+    } else verdict = 'No real solution: they don’t meet.';
+  }
+  return `<div class="sys"><div class="sys-title">Where ${nF} = ${nG}</div>${miniSteps(lines)}<p class="sys-ans">${verdict}</p></div>`;
+}
+
+// ---- equations: "2x + 3 = 7" is solved for x; with y in it ("2x − y = −3") it's solved for y ----
+const isEqSign = it => it.t === 'c' && it.v === '=';
+const deepHas = (arr, t) => arr.some(it => it.t === t || Object.values(it).some(v => Array.isArray(v) && deepHas(v, t)));
+const anyHTML = (v, view) => (isAlg(v) ? algHTML(v, view) : valueHTML(v, view));
+// P(x) + q·y written the usual way: x terms, then y, then the number.
+function withYHTML(P, q, view) {
+  const terms = [];
+  const isP = isPoly(P), cs = isP ? dense(P) : null;
+  if (isP) for (let k = cs.length - 1; k >= 1; k--) terms.push({ c: cs[k], v: xPow(k) });
+  else if (isAlg(P)) terms.push({ alg: P });
+  terms.push({ c: q, v: YV });
+  if (isP) terms.push({ c: cs[0], v: '' });
+  else if (!isAlg(P)) terms.push({ c: P, v: '' });
+  const out = terms.filter(t => t.alg || !isZero(t.c)).map((t, i) => {
+    if (t.alg) return (i ? '<span class="op">+</span>' : '') + algHTML(t.alg, view);
+    if (isAlg(t.c)) { // xy, or (x + 1)y
+      const mono = isPoly(t.c) && t.c.px.length === 1 && isOne(t.c.px[0].c);
+      return (i ? '<span class="op">+</span>' : '') + (mono ? xPow(t.c.px[0].k) : `(${algHTML(t.c, view)})`) + t.v;
+    }
+    const neg = signV(t.c) < 0, a = neg ? negV(t.c) : t.c;
+    const body = t.v && isOne(a) ? t.v : valueHTML(a, view) + t.v;
+    return i ? `<span class="op">${neg ? MINUS : '+'}</span>${body}` : (neg ? MINUS : '') + body;
+  });
+  return out.join('') || '0';
+}
+function solveEquation(items, at, opts) {
+  const L = items.slice(0, at), R = items.slice(at + 1);
+  if (R.some(isEqSign)) throw new CalcError('An equation has just one =.');
+  if (!L.length) throw new CalcError('Type the left side of the equation.');
+  if (!R.length) throw new CalcError('Type the other side of the =.');
+  const side = (arr, yval) => {
+    const r = solve(arr, { ...opts, yval });
+    if (r.error) throw r.notPoly ? new NotPolyError(r.error) : new CalcError(r.error);
+    return r.value;
+  };
+  const hasY = deepHas(items, 'y');
+  const L0 = side(L, 0), R0 = side(R, 0);
+  let a = Q(0n);
+  if (hasY) {
+    const L1 = side(L, 1), R1 = side(R, 1), L2 = side(L, 2), R2 = side(R, 2);
+    a = opV('-', opV('-', L1, L0), opV('-', R1, R0));
+    const a2 = opV('-', opV('-', L2, L0), opV('-', R2, R0));
+    if (!isZero(opV('-', a2, opV('*', Q(2n), a)))) throw new CalcError('This solves equations where y isn’t squared or multiplied by y');
+  }
+  E = opts;
+  const view = opts.view, lines = [];
+  const push = (note, html) => lines.push({ key: html, html, note });
+  const typed = `${pr(parseArr(L))} = ${pr(parseArr(R))}`;
+  push(null, typed);
+  const simple = isPoly(L0) || isQ(L0);
+  if (hasY && !isZero(a)) { // solve for y
+    const qL = opV('-', side(L, 1), L0), qR = opV('-', side(R, 1), R0);
+    E = opts;
+    const tidy = `${withYHTML(L0, qL, view)} = ${withYHTML(R0, qR, view)}`;
+    const alone = L.length === 1 && L[0].t === 'y' && isZero(qR);
+    if (tidy !== typed && simple) push('Simplify each side', tidy);
+    const rhs = opV('-', R0, L0), f = opV('/', rhs, a);
+    if (!alone) {
+      if (!(isZero(L0) && isZero(qR))) push(isZero(qR) ? `Move the other terms to the right side` : `Get the ${YV} terms on one side and the rest on the other`, `${withYHTML(Q(0n), a, view)} = ${anyHTML(rhs, view)}`);
+      if (!isOne(a)) push(isMinusOne(a) ? 'Multiply both sides by −1' : `Divide both sides by ${isAlg(a) && !(isPoly(a) && a.px.length === 1) ? `(${anyHTML(a, view)})` : anyHTML(a, view)}`, `${YV} = ${anyHTML(f, view)}`);
+    }
+    lines.at(-1).html = lines.at(-1).key;
+    return { lines, value: f, unit: '', equation: { kind: 'y', html: `${YV} = ${anyHTML(f, view)}` } };
+  }
+  // solve for x (or check an equation with no letters in it)
+  const d = opV('-', L0, R0);
+  let xs = [], other = [], verdict = null;
+  const alone = L.length === 1 && L[0].t === 'x' && !isAlg(R0) && !deepHas(R, 'x');
+  if (alone) xs = [R0]; // x = 5 is already solved
+  else if (!isAlg(d)) {
+    if (!deepHas(items, 'x')) push('Work out each side', `${valueHTML(L0, view)} = ${valueHTML(R0, view)}`);
+    else push('Move everything to one side', `${valueHTML(d, view)} = 0`);
+    verdict = isZero(d) ? 'Always true' + (deepHas(items, 'x') ? ' — every x works' : '') : 'Never true' + (deepHas(items, 'x') ? ' — no x works' : '');
+  } else {
+    let top = d;
+    if (!isZero(R0) || (isRF(d) && isRF(L0))) push('Move everything to one side', `${algHTML(d, view)} = 0`);
+    if (isRF(d)) {
+      top = d.rn;
+      push('A fraction is 0 when its top is 0', `${anyHTML(top, view)} = 0`);
+    }
+    if (isPoly(top)) {
+      const z = solveZero(top, view);
+      for (const l of z.lines) push(l[0], l[1]);
+      const holes = holesOf(d);
+      xs = z.xs.filter(x => !(isQ(x) && holes.some(h => h.n === x.n && h.d === x.d)));
+      other = z.other;
+    } else verdict = isZero(top) ? 'Always true' : 'Never true — no x works';
+  }
+  lines.at(-1).html = lines.at(-1).key;
+  const real = [...xs.map(x => `${XV} = ${valueHTML(x, view)}`), ...other.filter(o => !o.includes('<i>i</i>'))];
+  const cplx = other.filter(o => o.includes('<i>i</i>'));
+  const html = verdict || (real.length ? real.join(' &ensp;or&ensp; ') + (cplx.length ? ` <small>(and ${cplx.join(', ')})</small>` : '')
+    : `no real solution${cplx.length ? ` <small>(${cplx.join(', ')})</small>` : ''}`);
+  const lone = (a, b) => a.length === 1 && a[0].t === 'x' && !deepHas(b, 'x');
+  const vertical = (lone(L, R) || lone(R, L)) && xs.length === 1 ? xs[0] : undefined; // x = 3 is a line, 2x + 3 = 7 a sum to solve
+  return { lines, value: xs.length === 1 ? xs[0] : null, unit: '', equation: { kind: 'x', html, xs, vertical } };
+}
 // ===== UI =====
 
 const $ = s => document.querySelector(s);
@@ -2061,6 +2514,7 @@ const S = {
   capture: null,      // action id whose new key (or key sequence) is being recorded
   capKeys: [],
   fx: false,          // graph mode: the expression is f(x)
+  eqm: false,         // equation mode: y and = type into the expression
   pins: [],           // functions pinned to the graph
   sel: null,          // graph mode: which pinned function is in the editor (null = the new one)
   draft: [],          // the new function, kept while a pinned one is being edited
@@ -2108,6 +2562,32 @@ function typeRepeat() {
   S.cur.i = 0;
   edited();
 }
+function typeY() {
+  startTyping(false);
+  curArr().splice(S.cur.i, 0, { t: 'y' });
+  S.cur.i++;
+  edited();
+}
+// X H: equation mode, where Y types y and = types an equals sign (= = still saves).
+function toggleEqMode() {
+  if (S.fx) { selectRow(null); S.fx = false; }
+  S.eqm = !S.eqm;
+  S.tab = 'steps';
+  toast(S.eqm ? 'Equation mode: type y and =, then = = saves' : 'Equation mode off: = saves again');
+  save();
+}
+// = saves, except in equation mode, where it types an equals sign.
+const pressEquals = () => (S.eqm ? typeEquals() : equals());
+const pressY = () => (S.eqm ? typeY() : toast(`y is for equations: ${keyName(S.keys.eqmode[0] || 'x h')} turns on equation mode`));
+// = makes an equation; it always goes between the two sides, outside any box.
+function typeEquals() {
+  if (S.fx) { toast('Graph mode is already f(x) = … — leave it to type an equation'); return; }
+  startTyping(false);
+  if (S.cur.path.length) S.cur = { path: [], i: S.cur.path[0].idx + 1 };
+  S.root.splice(S.cur.i, 0, { t: 'c', v: '=' });
+  S.cur.i++;
+  edited();
+}
 function typeX() {
   startTyping(false);
   curArr().splice(S.cur.i, 0, { t: 'x' });
@@ -2115,9 +2595,11 @@ function typeX() {
   edited();
 }
 const hasX = arr => arr.some(it => it.t === 'x' || (isTpl(it) && SLOTS[it.t].some(sl => hasX(it[sl]))));
+const hasY = arr => arr.some(it => it.t === 'y' || (isTpl(it) && SLOTS[it.t].some(sl => hasY(it[sl]))));
 // X G: graph mode. The display becomes f(x) = …, the Graph tab opens and plots it as you type.
 function toggleGraph() {
   if (S.fx) { selectRow(null); S.fx = false; S.tab = 'steps'; save(); return; } // X G again: back to the steps
+  S.eqm = false;
   S.fx = true;
   S.tab = 'graph';
   G.auto = true;
@@ -2424,8 +2906,15 @@ function equals() {
     exprEl.classList.add('shake');
     return;
   }
+  const label = res.equation ? res.equation.kind : '';
+  if (res.equation && res.value === null) { // 2+3 = 5, x² = 4: nothing single to keep as Ans
+    S.afterEval = true;
+    S.committed = { ansUsed };
+    toast(res.equation.xs && res.equation.xs.length > 1 ? 'More than one answer, so Ans stays the same' : 'Nothing to save to Ans');
+    return;
+  }
   S.ans = res.value;
-  S.history.unshift({ items: structuredClone(S.root), v: res.value, unit: res.unit });
+  S.history.unshift({ items: structuredClone(S.root), v: res.value, unit: res.unit, label });
   S.history.length = Math.min(S.history.length, 60);
   S.afterEval = true;
   S.committed = { ansUsed };
@@ -2456,6 +2945,9 @@ for (const [fn, name] of Object.entries(TRIG_NAMES)) action(fn, `${name} (${FN_L
 action('pi', 'Pi (π)', 'Trigonometry', typePi, 'π');
 action('angle', 'Degrees ⇄ radians', 'Trigonometry', toggleAngle, '');
 action('xvar', 'Variable x', 'Algebra & graphs', typeX, '<i class="xv">x</i>');
+action('eqmode', 'Equation mode: y and = (solves for x or y)', 'Algebra & graphs', toggleEqMode, '');
+action('yvar', 'Variable y (equation mode)', 'Algebra & graphs', pressY, '<i class="xv">y</i>');
+action('equals', 'Equals: saves the answer (types = in equation mode)', 'Calculate', pressEquals, '=', 'eq');
 action('repeat', 'Repeating digits (0.3̅)', 'Numbers', typeRepeat, '<span>0.<span class="rep">3</span></span>');
 action('graph', 'Graph mode: f(x) = …', 'Algebra & graphs', toggleGraph, '');
 action('clearGraphs', 'Erase all graphs', 'Algebra & graphs', clearGraphs, '');
@@ -2478,12 +2970,12 @@ const DEFAULT_KEYS = {
   dot: ['.'], repeat: ['\\'], add: ['+', '[ ='], sub: ['-'], mul: ['*', '[ 8'], div: ['/'], lparen: ['('], rparen: [')'],
   pow: ['^', '[ 6'], root: ['r'], frac: ['f', '[ 0', '[ /'],
   sin: ['s'], cos: ['c'], tan: ['t'], csc: ['c s'], sec: ['s e'], cot: ['c t'],
-  asin: ['a s'], acos: ['a c'], atan: ['a t'], pi: ['p'], angle: ['d'], xvar: ['x'], graph: ['x g'], clearGraphs: ['p z'], mixed: ['m'], view: ['v'], eq: ['q', '='], next: ['Enter'], ans: ['a'],
+  asin: ['a s'], acos: ['a c'], atan: ['a t'], pi: ['p'], angle: ['d'], xvar: ['x'], graph: ['x g'], eqmode: ['x h'], clearGraphs: ['p z'], mixed: ['m'], view: ['v'], eq: ['q', '= ='], yvar: ['y'], equals: ['='], next: ['Enter'], ans: ['a'],
   back: ['Backspace'], del: ['Delete'], clear: ['Escape'],
   left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'],
 };
 
-const SCI = ['sin', 'cos', 'tan', 'csc', 'sec', 'cot', 'pi', 'asin', 'acos', 'atan', 'angle', 'xvar', 'repeat', 'graph'];
+const SCI = ['sin', 'cos', 'tan', 'csc', 'sec', 'cot', 'pi', 'angle', 'asin', 'acos', 'atan', 'xvar', 'yvar', 'repeat', 'graph', 'eqmode'];
 // NAV is a d-pad spanning three rows in the first column.
 const PAD = [
   ['view', 'pow', 'root', 'back', 'clear'],
@@ -2491,7 +2983,7 @@ const PAD = [
   ['mixed', 'd7', 'd8', 'd9', 'mul'],
   ['NAV', 'd4', 'd5', 'd6', 'sub'],
   ['d1', 'd2', 'd3', 'add'],
-  ['d0', 'dot', 'next', 'eq'],
+  ['d0', 'dot', 'next', 'equals'],
 ];
 
 const KEY_NAMES = {
@@ -2547,15 +3039,15 @@ function deV(o) {
 }
 function validItems(arr) {
   return Array.isArray(arr) && arr.every(it => it && (
-    (it.t === 'c' && typeof it.v === 'string' && /^[0-9.+\-*/()]$/.test(it.v)) ||
-    it.t === 'ans' || it.t === 'pi' || it.t === 'x' ||
+    (it.t === 'c' && typeof it.v === 'string' && /^[0-9.+\-*/()=]$/.test(it.v)) ||
+    it.t === 'ans' || it.t === 'pi' || it.t === 'x' || it.t === 'y' ||
     (isTpl(it) && (it.t !== 'fn' || ((it.pw ??= []) && Object.hasOwn(FN_LABEL, it.name))) && SLOTS[it.t].every(s => validItems(it[s])))
   ));
 }
 function save() {
   store.set({
-    keymapVersion: 8, pins: S.pins, fx: S.fx, view: S.view, angle: S.angle, hints: S.hints, autoExit: S.autoExit, tab: S.tab, keys: S.keys, ans: enV(S.ans),
-    history: S.history.map(h => ({ items: h.items, v: enV(h.v), unit: h.unit })),
+    keymapVersion: 9, pins: S.pins, fx: S.fx, eqm: S.eqm, view: S.view, angle: S.angle, hints: S.hints, autoExit: S.autoExit, tab: S.tab, keys: S.keys, ans: enV(S.ans),
+    history: S.history.map(h => ({ items: h.items, v: enV(h.v), unit: h.unit, label: h.label })),
   });
 }
 function load() {
@@ -2567,6 +3059,7 @@ function load() {
   if (['steps', 'history', 'graph', 'keys'].includes(s.tab)) S.tab = s.tab;
   if (Array.isArray(s.pins)) S.pins = s.pins.filter(p => p && validItems(p.items)).slice(-5);
   S.fx = s.fx === true;
+  S.eqm = s.eqm === true && !S.fx;
   for (const id in A) {
     const ks = s.keys && s.keys[id];
     S.keys[id] = Array.isArray(ks) ? ks.filter(k => typeof k === 'string' && k) : null;
@@ -2579,6 +3072,8 @@ function load() {
     if (!keyOwner('q')) S.keys.eq.unshift('q');
   }
   for (const id in A) if (S.keys[id]) S.keys[id] = S.keys[id].map(k => (k === ' ' ? 'Space' : k));
+  // v9: = types an equals sign now, and = = (quickly) saves.
+  if ((s.keymapVersion || 1) < 9 && S.keys.eq) S.keys.eq = S.keys.eq.filter(k => k !== '=');
   // Actions added since the keys were saved get their defaults, unless the key is already taken.
   for (const id in A) if (!S.keys[id]) S.keys[id] = DEFAULT_KEYS[id].filter(k => !keyOwner(k));
   // v6 added [ = / [ 8 / [ 0 as no-Shift shortcuts for + × and fractions (a short-lived v5 used - instead).
@@ -2590,10 +3085,11 @@ function load() {
   if ((s.keymapVersion || 1) < 7 && !keyOwner('[ 6')) S.keys.pow.push('[ 6');
   // v8 added [ / for fractions.
   if ((s.keymapVersion || 1) < 8 && !keyOwner('[ /')) S.keys.frac.push('[ /');
+  if ((s.keymapVersion || 1) < 9 && S.keys.eq && !keyOwner('= =')) S.keys.eq.push('= =');
   try { if (s.ans) S.ans = deV(s.ans); } catch {}
   if (Array.isArray(s.history)) {
     for (const h of s.history) {
-      try { if (validItems(h.items)) S.history.push({ items: h.items, v: deV(h.v), unit: h.unit === '°' ? '°' : '' }); } catch {}
+      try { if (validItems(h.items)) S.history.push({ items: h.items, v: deV(h.v), unit: h.unit === '°' ? '°' : '', label: ['x', 'y'].includes(h.label) ? h.label : '' }); } catch {}
     }
   }
 }
@@ -2622,15 +3118,15 @@ function edArr(arr, path, isRoot, live) {
       if ('+-*/'.includes(it.v)) {
         const o = opItem(it, arr[i - 1]);
         s += `<span class="${o.cls}"${at(i)}>${o.txt}</span>`;
-      } else s += `<span class="ch"${at(i)}>${it.v}</span>`;
+      } else s += `<span class="ch${it.v === '=' ? ' eqch' : ''}"${at(i)}>${it.v}</span>`;
       if (it.v === '(') depth++;
       else if (it.v === ')' && depth > 0) depth--;
     } else if (it.t === 'ans') {
       s += `<span class="ch ans"${at(i)}>Ans</span>`;
     } else if (it.t === 'pi') {
       s += `<span class="ch"${at(i)}>π</span>`;
-    } else if (it.t === 'x') {
-      s += `<span class="ch xv"${at(i)}>x</span>`;
+    } else if (it.t === 'x' || it.t === 'y') {
+      s += `<span class="ch xv"${at(i)}>${it.t}</span>`;
     } else if (it.t === 'fn') {
       const pwPath = [...path, { idx: i, slot: 'pw' }];
       const showPw = it.pw.length || (live && samePath(S.cur.path.slice(0, pwPath.length), pwPath));
@@ -2664,7 +3160,7 @@ function renderEditor() {
   ARR_REG = [];
   exprEl.innerHTML = '<span class="expr-in">' + (S.fx ? `<span class="fxlabel">${S.sel === null ? 'f' : 'g' + (S.sel + 1)}(<i class="xv">x</i>) =</span>` : '') + (S.root.length
     ? edArr(S.root, [], true, true)
-    : CUR + `<span class="ph">${S.fx ? 'type a function of x…' : 'Type a calculation…'}</span>`) + '</span>';
+    : CUR + `<span class="ph">${S.fx ? 'type a function of x…' : S.eqm ? 'Type an equation, like 2x + y = 5…' : 'Type a calculation…'}</span>`) + '</span>';
   const c = exprEl.querySelector('.cur');
   if (c) {
     const er = exprEl.getBoundingClientRect(), cr = c.getBoundingClientRect();
@@ -2682,7 +3178,9 @@ function renderHint() {
   if (S.fx && S.sel !== null) h = `Editing g${S.sel + 1}(x) · ${kbd('eq')} saves · ${kbd('clear')} deletes it · ${kbd('up')} ${kbd('down')} move between functions`;
   else if (S.fx && !S.root.length && S.pins.length) h = `Graph mode · type a new function · ${kbd('up')} ${kbd('down')} move between functions · ${kbd('clear')} on one deletes it · ${kbd('clearGraphs')} erases all`;
   else if (S.fx && !S.root.length) h = `Graph mode · build f(x) with ${kbd('xvar')} · ${kbd('eq')} pins it to compare · ${kbd('graph')} or ${kbd('clear')} leaves`;
+  else if (S.eqm && !S.root.length) h = `Equation mode · ${kbd('yvar')} types <i class="xv">y</i> and ${kbd('equals')} an equals sign · <kbd>=</kbd><kbd>=</kbd> or ${kbd('eq')} saves · ${kbd('eqmode')} leaves`;
   else if (!S.root.length) h = `The answer shows as you type · ${kbd('eq')} saves it to Ans and history · ${kbd('next')} moves to the next box, or saves when you’re not in one`;
+  else if (!p && S.root.some(isEqSign)) h = `Equation · it’s solved as you type: for <i class="xv">y</i> if it has one, otherwise for <i class="xv">x</i> · ${kbd('eq')} saves`;
   else if (p && p.slot === 'num') h = `Top of the fraction · ${on} to the bottom`;
   else if (p && p.slot === 'den') h = `Bottom of the fraction · ${on}${S.autoExit ? ', or just type the next operator' : ''}`;
   else if (p && p.slot === 'whole') h = `Whole number · ${on} to the fraction part`;
@@ -2740,6 +3238,14 @@ function renderResult(res) {
     return;
   }
   if (!S.afterEval) resultEl.classList.add('preview');
+  if (res.equation) {
+    resultEl.innerHTML = `<span>${res.equation.html}</span>`;
+    const xs = res.equation.xs || [];
+    if (xs.some(x => !exactIn(x, 'frac') || (isQ(x) && x.d !== 1n))) altEl.innerHTML = xs.map(x => `<i class="xv">x</i> ≈ ${fmtFloat(toF(x), 6)}`).join(', ');
+    const ln = lineOf({ items: S.root, value: res.value, vx: res.equation.vertical });
+    if (ln) altEl.innerHTML = interceptsAlt(ln, S.view);
+    return;
+  }
   if (isAlg(res.value)) { renderAlgResult(res); return; }
   const v = res.value, main = valueHTML(v, S.view) + res.unit;
   resultEl.innerHTML = `<span class="eqsign">${eqSign(v, S.view)}</span><span>${main}</span>`; // own span: flex would flatten a ²
@@ -2764,6 +3270,21 @@ function renderAlgResult(res) {
   altEl.innerHTML = notes.map(n => `<span class="altnote">${n}</span>`).join(' · ');
 }
 
+function systemHTML(res, view) {
+  if (!S.pins.length || !res || res.error) return '';
+  const srcs = graphSources(), main = srcs.find(s => s.current);
+  if (!main) return '';
+  const name = s => (s.pin !== undefined ? 'g' + (s.pin + 1) : 'f') + `(${XV})`;
+  const ok = v => v && (isQ(v) || lowPoly(v));
+  const F = res.value;
+  if (!ok(F)) return '';
+  const blocks = srcs.filter(o => o !== main).map(o => {
+    const r = solve(o.items, { view, ans: S.ans, angle: S.angle }), G = r.error ? null : r.value;
+    return ok(G) && (isPoly(F) || isPoly(G)) ? solvePair(F, G, name(main), name(o), view) : '';
+  }).filter(Boolean);
+  return blocks.length ? `<section class="extra"><h4>System: where they meet</h4>${blocks.join('')}</section>` : '';
+}
+
 const TAGS = { paren: '( )', trig: 'sin', pow: 'xⁿ √', md: '× ÷', as: '+ −', frac: 'a/b', rw: '↺' };
 const EXAMPLE = `1 + 2 × (${fr('3', '4')} − ${fr('1', '2')})`;
 
@@ -2780,6 +3301,7 @@ function renderSteps(res) {
         <li>${kbd('sin')} ${kbd('cos')} ${kbd('tan')} for trig — exact at every multiple of 1.5°: sin(30°) = ${fr('1', '2')}, sin(15°) = ${radHTML(sinQ1(30))}, sin(18°) = ${radHTML(sinQ1(36))}. ${kbd('angle')} switches degrees/radians and ${kbd('pi')} types π.</li>
         <li>${kbd('next')} moves to the next box: ${kbd('sin')} ${kbd('pow')} 2 ${kbd('next')} 3 0 is sin²(30°), while ${kbd('sin')} 3 0 ${kbd('pow')} 2 is sin(30²).</li>
         <li>${kbd('xvar')} types <i class="xv">x</i>: (<i class="xv">x</i> + 1)<sup class="sup">2</sup> expands to <i class="xv">x</i><sup class="sup">2</sup> + 2<i class="xv">x</i> + 1, and that factors back. ${kbd('graph')} graphs a function.</li>
+        <li>${kbd('eqmode')} turns on equation mode, where ${kbd('equals')} types an equals sign: 2<i class="xv">x</i> + 3 = 7 is solved for <i class="xv">x</i>, and with ${kbd('yvar')} 2<i class="xv">x</i> − <i class="xv">y</i> = −3 becomes <i class="xv">y</i> = 2<i class="xv">x</i> + 3, with every form of the line.</li>
         <li>${kbd('view')} switches the answer between fraction, mixed number and decimal.</li>
         <li>Change any key in the <b>Keybinds</b> tab.</li>
       </ul></div>`;
@@ -2808,7 +3330,8 @@ function renderSteps(res) {
       : committed ? res.error : `Keep going… (${res.error})`;
     return;
   }
-  if (res.lines.length === 1) h += `<p class="msg">That’s already as simple as it gets.</p>`;
+  if (res.lines.length === 1 && !res.equation) h += `<p class="msg">That’s already as simple as it gets.</p>`;
+  h += formsHTML(res.value, S.view, res.equation) + systemHTML(res, S.view);
   el.innerHTML = h;
 }
 
@@ -2820,7 +3343,7 @@ function renderHistory() {
   }
   el.innerHTML = `<div class="panel-head"><p>Click a line to load it.</p><button class="textbtn" data-clear-history>Clear history</button></div>
     <ul class="hist">${S.history.map((h, i) => `<li><button type="button" data-hist="${i}">
-      <span>${edArr(h.items, [], true, false)}</span><span class="res"><span class="eqs">${eqSign(h.v, S.view)}</span> ${valueHTML(h.v, S.view)}${h.unit || ''}</span></button></li>`).join('')}</ul>`;
+      <span>${edArr(h.items, [], true, false)}</span><span class="res"><span class="eqs">${h.label ? `→ <i class="xv">${h.label}</i> =` : eqSign(h.v, S.view)}</span> ${h.label ? anyHTML(h.v, S.view) : valueHTML(h.v, S.view)}${h.unit || ''}</span></button></li>`).join('')}</ul>`;
 }
 
 function renderKeys() {
@@ -2851,9 +3374,13 @@ function escapeHTML(s) { return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<':
 function renderPad() {
   const btn = (id, extra = '') => {
     const a = A[id], k = S.keys[id][0];
+    let cls = a.cls;
     if (id === 'graph') extra += S.fx ? ' on' : '';
-    const label = id === 'graph' ? `<span class="stack"><b>f(<i class="xv">x</i>)</b><small>${S.fx ? 'graphing' : 'graph'}</small></span>` : id === 'angle' ? `<span class="stack"><b>${S.angle === 'deg' ? 'DEG' : 'RAD'}</b><small>⇄ ${S.angle === 'deg' ? 'rad' : 'deg'}</small></span>` : a.label;
-    return `<button type="button" class="k ${a.cls} ${extra}" data-act="${id}" aria-label="${a.name}">${label}${k ? `<span class="kb">${escapeHTML(keyBadge(k))}</span>` : ''}</button>`;
+    if (id === 'eqmode') extra += S.eqm ? ' on' : '';
+    if (id === 'yvar' && !S.eqm) extra += ' dim';
+    if (id === 'equals' && S.eqm) cls = 'op'; // types = rather than saving
+    const label = id === 'eqmode' ? `<span class="stack"><b><i class="xv">y</i> =</b><small>${S.eqm ? 'on' : 'equation'}</small></span>` : id === 'graph' ? `<span class="stack"><b>f(<i class="xv">x</i>)</b><small>${S.fx ? 'graphing' : 'graph'}</small></span>` : id === 'angle' ? `<span class="stack"><b>${S.angle === 'deg' ? 'DEG' : 'RAD'}</b><small>⇄ ${S.angle === 'deg' ? 'rad' : 'deg'}</small></span>` : a.label;
+    return `<button type="button" class="k ${cls} ${extra}" data-act="${id}" aria-label="${a.name}">${label}${k ? `<span class="kb">${escapeHTML(keyBadge(k))}</span>` : ''}</button>`;
   };
   $('#sci').innerHTML = SCI.map(id => btn(id)).join('');
   padEl.innerHTML = PAD.flat().map(id => (id === 'NAV'
@@ -2871,6 +3398,8 @@ function renderTabs() {
 
 function render() {
   document.body.classList.toggle('nohints', !S.hints);
+  document.body.classList.toggle('eqm', S.eqm);
+  $('#eqChip').hidden = !S.eqm;
   for (const b of document.querySelectorAll('[data-view]')) b.setAttribute('aria-pressed', b.dataset.view === S.view);
   $('#angleBadge').textContent = S.angle === 'deg' ? 'DEG' : 'RAD';
   ansLineEl.innerHTML = S.ans ? `<span class="ans">Ans</span> ${eqSign(S.ans, S.view)} ${valueHTML(S.ans, S.view)}` : '';
@@ -2916,10 +3445,12 @@ function realPow(b, e) {
 const evalAlg = (v, x) => (isRF(v) ? evalAlg(v.rn, x) / evalAlg(v.rd, x)
   : isPoly(v) ? v.px.reduce((s, m) => s + toF(m.c) * x ** m.k, 0) : toF(v));
 // Plain number evaluation of an expression at x, for plotting.
+let EVAL_Y = 0;
 function evalF(n, x) {
   switch (n.k) {
     case 'num': return toF(n.v);
     case 'x': return x;
+    case 'y': return EVAL_Y;
     case 'pi': return Math.PI;
     case 'ans': return !S.ans ? NaN : isAlg(S.ans) ? evalAlg(S.ans, x) : toF(S.ans);
     case 'neg': return -evalF(n.a, x);
@@ -2943,13 +3474,26 @@ const hasTrig = arr => arr.some(it => it.t === 'fn' || (isTpl(it) && SLOTS[it.t]
 function graphSources() {
   const out = [];
   const newRow = S.sel === null ? S.root : S.draft;
-  if (hasX(newRow) || (S.fx && newRow.length)) out.push({ items: newRow, current: S.sel === null, color: GRAPH_COLORS[0] }); // f(x) = 6 is a flat line
+  if (hasX(newRow) || hasY(newRow) || (S.fx && newRow.length)) out.push({ items: newRow, current: S.sel === null, color: GRAPH_COLORS[0] }); // f(x) = 6 is a flat line
   S.pins.forEach((p, i) => out.push(i === S.sel
     ? { items: S.root, pin: i, current: true, color: GRAPH_COLORS[i + 1] }
     : { items: p.items, pin: i, color: GRAPH_COLORS[i + 1] }));
   return out.map(src => {
     let f = null;
-    try { const ast = parseArr(src.items); f = x => evalF(ast, x); } catch {}
+    try {
+      const at = src.items.findIndex(isEqSign);
+      const L = src.items.slice(0, at), R = src.items.slice(at + 1), lone = (a, b) => a.length === 1 && a[0].t === 'x' && !hasX(b);
+      if (at >= 0 && !hasY(src.items) && (lone(L, R) || lone(R, L))) { // x = 3: a vertical line, not a function of x
+        const r = solve(lone(L, R) ? R : L, { view: 'frac', ans: S.ans, angle: S.angle });
+        if (!r.error && r.value && !isAlg(r.value) && Number.isFinite(toF(r.value))) return { ...src, f: () => NaN, vx: r.value, value: null };
+      }
+      if (at < 0) { const ast = parseArr(src.items); f = x => evalF(ast, x); }
+      else if (hasY(src.items)) { // an equation: solve for y at each x (it's linear in y)
+        const L = parseArr(src.items.slice(0, at)), R = parseArr(src.items.slice(at + 1));
+        const at0 = (n, x, y) => { EVAL_Y = y; return evalF(n, x); };
+        f = x => { const l0 = at0(L, x, 0), r0 = at0(R, x, 0); return (r0 - l0) / ((at0(L, x, 1) - l0) - (at0(R, x, 1) - r0)); };
+      }
+    } catch {}
     return { ...src, f };
   }).filter(src => src.f);
 }
@@ -2981,7 +3525,7 @@ function autoView(srcs, zeros) {
   const trig = srcs.some(s => hasTrig(s.items));
   if (trig) [x0, x1] = S.angle === 'deg' ? [-360, 360] : [-2 * Math.PI, 2 * Math.PI];
   else { // fit the interesting part, like a graphing calculator: let the tails run off-screen
-    const pts = srcs.flatMap(s => features(s.f)).concat(zeros.filter(Number.isFinite).map(z => [z, 0]));
+    const pts = srcs.flatMap(s => (s.vx ? [[toF(s.vx), 0]] : features(s.f))).concat(zeros.filter(Number.isFinite).map(z => [z, 0]));
     const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
     if (pts.length > 1 && Math.max(...xs) > Math.min(...xs)) {
       const lo = Math.min(...xs), hi = Math.max(...xs), pad = Math.max(2, (hi - lo) * 0.6), mid = (lo + hi) / 2;
@@ -3044,6 +3588,13 @@ function meetPoints(a, b, range) {
     if (!Number.isFinite(xf) || pts.some(p => Math.abs(p.xf - xf) < 1e-7 * Math.max(1, Math.abs(xf)))) return;
     pts.push({ x, y, exact, xf, yf: toF(y) });
   };
+  if (a.vx || (b && b.vx)) { // x = c meets a curve at (c, its value there), and the x-axis at (c, 0)
+    const [v, o] = a.vx ? [a, b] : [b, a];
+    if (o && o.vx) return { pts, same: eqV(v.vx, o.vx), complete: true };
+    const y = o ? xEval(o, v.vx) : Q(0n);
+    if (y !== null && !isAlg(y)) add(v.vx, fullyExact(y) ? y : approx(toF(y)), fullyExact(y));
+    return { pts, same: false, complete: true };
+  }
   // polynomials (and fractions of them): solve a − b = 0 exactly
   const av = a.value, bv = b ? b.value : Q(0n);
   const algish = v => v && (isAlg(v) || isQ(v));
@@ -3091,22 +3642,36 @@ function meetPoints(a, b, range) {
   return { pts: pts.slice(0, 12), same: false, complete };
 }
 const curveName = s => (s.pin !== undefined ? 'g' + (s.pin + 1) : S.fx ? 'f' : 'y');
+// An equation-mode line (2x + 3y = 6, y = 4, x = 3) as whole-number standard form, or null.
+function lineOf(s) {
+  if (!s.items.some(isEqSign)) return null;
+  if (s.vx) return isQ(s.vx) ? { A: s.vx.d, B: 0n, C: s.vx.n } : null;
+  if (!hasY(s.items)) return null; // 2x + 3 = 7 is solved, not drawn
+  if (!('value' in s)) { const r = solve(s.items, { view: S.view, ans: S.ans, angle: S.angle }); s.value = r.error ? null : r.value; } // a redraw while dragging
+  if (s.value && isQ(s.value)) return stdForm(Q(0n), s.value);
+  const cs = lowPoly(s.value);
+  return cs && cs.length === 2 ? stdForm(cs[1], cs[0]) : null;
+}
+// How a curve is named in the key points: g1(x), or "the line" for an equation.
+const curveTitle = (s, cap) => (s.items.some(isEqSign) ? `${cap ? 'T' : 't'}he ${lineOf(s) ? 'line' : 'graph'}` : `${curveName(s)}(<i class="xv">x</i>)`);
+const plainV = v => (isQ(v) ? (v.n < 0n ? MINUS : '') + abs(v.n) + (v.d === 1n ? '' : '/' + v.d) : tickText(Number(toF(v).toPrecision(5))));
 const mainSource = srcs => srcs.find(s => s.current) || srcs[0];
 function updateKeyPoints(srcs) {
   const el = $('#graphPts');
   if (!G.view || !srcs.length) { el.innerHTML = ''; G.points = []; return; }
   for (const s of srcs) if (!('value' in s)) { const r = solve(s.items, { view: S.view, ans: S.ans, angle: S.angle }); s.value = r.error ? null : r.value; }
   const range = [G.view.x0, G.view.x1], groups = [];
-  const nm = s => `${curveName(s)}(<i class="xv">x</i>)`;
   for (let i = 0; i < srcs.length; i++) for (let j = i + 1; j < srcs.length; j++) {
-    groups.push({ title: `${nm(srcs[i])} and ${nm(srcs[j])} meet`, meet: true, color: srcs[i].color, ...meetPoints(srcs[i], srcs[j], range) });
+    groups.push({ title: `${curveTitle(srcs[i], true)} and ${curveTitle(srcs[j])} meet`, meet: true, color: srcs[i].color, ...meetPoints(srcs[i], srcs[j], range) });
   }
   const main = mainSource(srcs);
-  groups.push({ title: `${nm(main)} crosses the <i class="xv">x</i>-axis`, color: main.color, ...meetPoints(main, null, range) });
-  const y0 = xEval(main, Q(0n));
-  if (y0 !== null && !isAlg(y0)) {
+  groups.push({ title: `${curveTitle(main, true)} crosses the <i class="xv">x</i>-axis`, color: main.color, ...meetPoints(main, null, range) });
+  const y0 = main.vx ? null : xEval(main, Q(0n));
+  if (main.vx) groups.push({ title: `${curveTitle(main, true)} crosses the <i class="xv">y</i>-axis`, color: main.color, complete: true, pts: [],
+    note: isZero(main.vx) ? 'everywhere: it’s the <i class="xv">y</i>-axis' : 'never: it’s vertical' });
+  else if (y0 !== null && !isAlg(y0)) {
     const ex = fullyExact(y0);
-    groups.push({ title: `${nm(main)} crosses the <i class="xv">y</i>-axis`, color: main.color, complete: true,
+    groups.push({ title: `${curveTitle(main, true)} crosses the <i class="xv">y</i>-axis`, color: main.color, complete: true,
       pts: [{ x: Q(0n), y: ex ? y0 : approx(toF(y0)), exact: ex, xf: 0, yf: toF(y0) }] });
   }
   let n = 0;
@@ -3114,7 +3679,7 @@ function updateKeyPoints(srcs) {
   const val = (v, exact) => (exact ? valueHTML(v, S.view) : fmtFloat(toF(v), 5));
   let k = 0;
   el.innerHTML = '<h4>Key points</h4>' + groups.map(g => {
-    const body = g.same ? 'they’re the same curve'
+    const body = g.note || g.same ? g.note || 'they’re the same curve'
       : g.pts.length ? g.pts.map(p => `<span class="pt">${g.meet ? `<b class="pt-n">${++k}</b>` : ''}${p.exact ? '' : '≈ '}(${val(p.x, p.exact)}, ${val(p.y, p.exact)})</span>`).join('')
       : g.complete ? 'none' : 'none in view';
     return `<div class="pt-group"><span class="pt-title">${g.title}${g.complete || g.same ? '' : ' <small>(in view)</small>'}</span>${body}</div>`;
@@ -3135,16 +3700,22 @@ function fitPoints() {
 let ptsTimer;
 const refreshKeyPoints = () => { clearTimeout(ptsTimer); ptsTimer = setTimeout(() => { updateKeyPoints(graphSources()); drawGraph(); }, 150); };
 
+// Equations are named by themselves: a line in standard form, with y = mx + b beside it.
+function fnLabel(s) {
+  const ln = lineOf(s);
+  if (!s.items.some(isEqSign)) return `${curveName(s)}(<i class="xv">x</i>) = ${edArr(s.items, [], true, false)}`;
+  if (!ln) return edArr(s.items, [], true, false);
+  const m = ln.B ? Q(-ln.A, ln.B) : null, b = ln.B ? Q(ln.C, ln.B) : null;
+  const si = m && !isZero(m) ? `${YV} = ${polyHTML(undense([b, m]), S.view)}` : '';
+  return `${stdHTML(ln, S.view)}${si ? `<small class="graph-si">${si}</small>` : ''}`;
+}
 function renderGraph(res) {
   if (S.tab !== 'graph') return;
   const srcs = graphSources();
-  $('#graphFns').innerHTML = srcs.map(s => `<div class="graph-fn${s.current && S.fx ? ' sel' : ''}" data-row="${s.pin ?? ''}"><span class="sw" style="background:var(${s.color})"></span>
-    <span>${curveName(s)}(<i class="xv">x</i>) = ${edArr(s.items, [], true, false)}</span>
-    ${s.pin !== undefined ? `<button type="button" data-unpin="${s.pin}" aria-label="Remove">×</button>` : ''}</div>`).join('');
   $('#graphEmpty').textContent = srcs.length ? '' : `Type something with x (${keyName(S.keys.xvar[0] || 'x')}) or press ${keyName(S.keys.graph[0] || 'x g')} to start a function — it’s graphed here.`;
-  $('#graphHelp').innerHTML = `Drag to move · scroll or +/− to zoom · Fit or double-click to auto-scale.${S.fx ? ` ${kbd('eq')} pins this function so you can graph another next to it.` : ''}`;
+  $('#graphHelp').innerHTML = `Drag to move · scroll or +/− to zoom · Fit or double-click to auto-scale.${S.fx ? ` ${kbd('eq')} pins this function so you can graph another next to it.` : ''}${S.pins.length ? ' The Steps tab shows how to solve where lines and parabolas meet.' : ''}`;
   // exact zeros of the current expression, and holes of every curve, when they're polynomials
-  const algOf = r => (r && !r.error && isAlg(r.value) ? r.value : null);
+  const algOf = r => (r && !r.error && r.value && isAlg(r.value) ? r.value : null);
   const v = algOf(res);
   const zeros = v ? zerosOf(v).map(z => toF(z.r)) : [];
   G.holes = srcs.flatMap(src => {
@@ -3155,9 +3726,12 @@ function renderGraph(res) {
   const refit = G.auto && (sig !== G.sig || !G.view);
   if (refit) G.view = autoView(srcs, zeros);
   G.sig = sig;
-  srcs.forEach(src => { if (src.current && res) src.value = res.error ? null : res.value; });
+  srcs.forEach(src => { if (src.current && res && !src.vx) src.value = res.error ? null : res.value; });
   updateKeyPoints(srcs);
   if (refit && fitPoints()) updateKeyPoints(srcs);
+  $('#graphFns').innerHTML = srcs.map(s => `<div class="graph-fn${s.current && S.fx ? ' sel' : ''}" data-row="${s.pin ?? ''}"><span class="sw" style="background:var(${s.color})"></span>
+    <span>${fnLabel(s)}</span>
+    ${s.pin !== undefined ? `<button type="button" data-unpin="${s.pin}" aria-label="Remove">×</button>` : ''}</div>`).join('');
   drawGraph(srcs);
 }
 
@@ -3194,6 +3768,7 @@ function drawGraph(srcs = graphSources()) {
   const N = Math.max(400, Math.round(W * 2));
   for (const s of [...srcs].reverse()) {
     ctx.strokeStyle = col(s.color); ctx.lineWidth = s.current ? 2.6 : 2; ctx.beginPath();
+    if (s.vx) { const vx = Math.round(X(toF(s.vx))) + .5; ctx.moveTo(vx, 0); ctx.lineTo(vx, H); ctx.stroke(); continue; }
     let prev = null;
     for (let i = 0; i <= N; i++) {
       const x = x0 + (x1 - x0) * i / N, y = s.f(x);
@@ -3215,6 +3790,40 @@ function drawGraph(srcs = graphSources()) {
     ctx.fillStyle = col('--panel'); ctx.beginPath(); ctx.arc(px, py, 2.2, 0, 7); ctx.fill();
     ctx.fillStyle = col('--ink'); ctx.beginPath(); ctx.arc(px + 11, py - 11, 8, 0, 7); ctx.fill();
     ctx.fillStyle = col('--panel'); ctx.fillText(String(p.n), px + 11, py - 10.5);
+  }
+  // a line from equation mode: its standard form beside it, and its intercepts beside their dots
+  const halo = (text, x, y, color) => { // on a small backing, so grid lines and tick numbers don't run through it
+    const w = ctx.measureText(text).width, h = parseInt(ctx.font.match(/(\d+)px/)[1], 10);
+    const left = ctx.textAlign === 'right' ? x - w : x, top = ctx.textBaseline === 'top' ? y - 3 : y - h - 3;
+    ctx.fillStyle = col('--panel'); ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(left - 4, top, w + 8, h + 6, 6); else ctx.rect(left - 4, top, w + 8, h + 6);
+    ctx.fill();
+    ctx.fillStyle = color; ctx.fillText(text, x, y);
+  };
+  const ln = main && lineOf(main);
+  if (ln) {
+    ctx.font = '700 14px system-ui, sans-serif'; ctx.textBaseline = 'bottom';
+    const label = stdText(ln), tw = ctx.measureText(label).width;
+    let at = null;
+    if (main.vx) { const vx = X(toF(main.vx)); at = vx > W - tw - 16 ? [vx - 8, 26, 'right'] : [vx + 8, 26, 'left']; }
+    else { // where the line is on screen, towards the right, on the side the line falls away from
+      const down = main.f(x1) < main.f(x0);
+      for (let t = 0.9; t >= 0.3 && !at; t -= 0.05) {
+        const x = x0 + (x1 - x0) * t, px = X(x), py = Y(main.f(x));
+        if (py > 30 && py < H - 12 && (down ? px + 10 + tw < W - 8 : px - 10 - tw > 8)) at = down ? [px + 10, py - 8, 'left'] : [px - 10, py - 8, 'right'];
+      }
+    }
+    if (at) { ctx.textAlign = at[2]; halo(label, at[0], at[1], col(main.color)); }
+    ctx.font = '600 12px system-ui, sans-serif'; ctx.textBaseline = 'bottom';
+    // away from the axis numbers (above the x-axis, left of the y-axis) and from the line itself
+    const rising = !main.vx && main.f(x1) > main.f(x0);
+    for (const p of G.points || []) {
+      if (p.n !== null || !Number.isFinite(p.yf)) continue;
+      const onY = p.xf === 0 && p.yf !== 0, left = onY || rising;
+      ctx.textAlign = left ? 'right' : 'left';
+      ctx.textBaseline = onY && !rising ? 'top' : 'bottom';
+      halo(`(${plainV(p.x)}, ${plainV(p.y)})`, X(p.xf) + (left ? -8 : 7), Y(p.yf) + (ctx.textBaseline === 'top' ? 6 : -6), col('--ink'));
+    }
   }
   // holes: open circles where a factor was cancelled
   ctx.fillStyle = col('--panel'); ctx.lineWidth = 2;
@@ -3325,6 +3934,7 @@ for (const el of [padEl, $('#sci')]) {
   });
 }
 $('#angleBadge').addEventListener('click', () => { toggleAngle(); render(); });
+$('#eqChip').addEventListener('click', () => { toggleEqMode(); render(); });
 
 const graphCv = $('#graphCanvas');
 graphCv.addEventListener('pointerdown', e => {
