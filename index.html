@@ -185,6 +185,11 @@ kbd {
 .seg button:hover { color: var(--ink); }
 .seg button[aria-pressed="true"] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 0 var(--key-edge); }
 
+/* Pages: the calculator, the System solver and Simplify / factor. */
+.pages { margin-left: auto; align-self: center; }
+.pages .pk { margin-left: 7px; font-size: 9px; opacity: .55; }
+@media (max-width: 840px) { .pages { margin-left: 0; } }
+
 /* ---------- display ---------- */
 .display {
   --ink: var(--disp-ink); --muted: var(--disp-muted); --line: var(--disp-line); --fn: var(--disp-fn);
@@ -285,6 +290,18 @@ kbd {
   animation: blink 1.05s steps(1) .5s infinite;
 }
 @keyframes blink { 50% { opacity: 0; } }
+
+/* System solver: both equations on the LCD, the one being typed lit. */
+.expr.sys { flex-direction: column; align-items: stretch; justify-content: center; gap: 4px; padding: 4px 0; font-size: 21px; }
+.sysrow { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 6px; border-radius: var(--r-1); opacity: .5; cursor: pointer; white-space: nowrap; }
+.sysrow.on { opacity: 1; background: rgba(255, 255, 255, .045); cursor: text; }
+.rowno { flex: none; display: grid; place-items: center; width: 18px; height: 18px; border: 1px solid var(--disp-line); border-radius: 50%; font: 500 10px/1 var(--font-num); color: var(--disp-muted); }
+.sysrow.on .rowno { border-color: var(--disp-ink); color: var(--disp-ink); }
+.sysrow .ph { font-size: 13px; margin-left: 4px; }
+.result.multi { font-size: 22px; letter-spacing: -.02em; }
+.result.multi .op { margin: 0 .5em; color: var(--muted); }
+.rowtag { color: var(--muted); margin-right: .5em; }
+.approx { color: var(--muted); font-size: .8em; margin-left: .7em; white-space: nowrap; }
 
 /* A key that does nothing on its own ([) is waiting for the rest of its shortcut: the LCD is ringed. */
 .display.seq-wait { outline-color: var(--accent); }
@@ -535,6 +552,9 @@ kbd {
   .result { font-size: 40px; min-height: 62px; }
   .result.preview { font-size: 28px; }
   .display { padding: 10px 14px 14px; }
+  .sysrow { min-height: 32px; }
+  .expr.sys { font-size: 18px; }
+  .pages .pk { display: none; }
   .hint { height: 5.1em; -webkit-line-clamp: 3; }
   .seg button { padding: 6px 7px; }
 }
@@ -549,6 +569,11 @@ kbd {
   <header class="top">
     <h1><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect class="tile" width="32" height="32" rx="4"/><path class="glyph" transform="matrix(4 0 0 4 4.92 24.59)" d="M3.328-3.009C3.387-3.268 3.616-4.184 4.314-4.184C4.364-4.184 4.603-4.184 4.812-4.055C4.533-4.005 4.334-3.756 4.334-3.517C4.334-3.357 4.443-3.168 4.712-3.168C4.932-3.168 5.25-3.347 5.25-3.746C5.25-4.264 4.663-4.403 4.324-4.403C3.746-4.403 3.397-3.875 3.278-3.646C3.029-4.304 2.491-4.403 2.202-4.403C1.166-4.403 .598-3.118 .598-2.869C.598-2.77 .697-2.77 .717-2.77C.797-2.77 .827-2.79 .847-2.879C1.186-3.935 1.843-4.184 2.182-4.184C2.371-4.184 2.72-4.095 2.72-3.517C2.72-3.208 2.55-2.54 2.182-1.146C2.022-.528 1.674-.11 1.235-.11C1.176-.11 .946-.11 .737-.239C.986-.289 1.205-.498 1.205-.777C1.205-1.046 .986-1.126 .837-1.126C.538-1.126 .289-.867 .289-.548C.289-.09 .787 .11 1.225 .11C1.883 .11 2.242-.588 2.271-.648C2.391-.279 2.75 .11 3.347 .11C4.374 .11 4.941-1.176 4.941-1.425C4.941-1.524 4.852-1.524 4.822-1.524C4.732-1.524 4.712-1.484 4.692-1.415C4.364-.349 3.686-.11 3.367-.11C2.979-.11 2.819-.428 2.819-.767C2.819-.986 2.879-1.205 2.989-1.644L3.328-3.009Z"/></svg><span>Calculator<span class="dot">.</span></span></h1>
     <p>Exact answers, order of operations shown step by step, and keys you can remap.</p>
+    <nav class="seg pages" aria-label="Pages">
+      <button type="button" data-page="main">Calculator<span class="pk"></span></button>
+      <button type="button" data-page="system">Systems<span class="pk"></span></button>
+      <button type="button" data-page="simplify">Simplify<span class="pk"></span></button>
+    </nav>
   </header>
 
   <main class="calc">
@@ -1700,8 +1725,10 @@ function tokenize(arr) {
       }
     } else if (it.t === 'pi') {
       out.push({ k: 'pi' });
-    } else if (it.t === 'x') {
-      out.push({ k: 'x' });
+    } else if (it.t === 'x' || it.t === 'y') {
+      out.push({ k: it.t });
+    } else if (it.t === 'v') {
+      out.push({ k: 'v', v: it.v });
     }
   }
   return out;
@@ -1712,7 +1739,7 @@ function parseArr(arr) {
   let p = 0;
   const peek = () => t[p];
   const isOp = (tk, ...vs) => tk && tk.k === 'op' && vs.includes(tk.v);
-  const startsPrimary = tk => tk && ['num', 'ans', 'frac', 'mixed', 'root', 'fn', 'pi', 'x', '('].includes(tk.k);
+  const startsPrimary = tk => tk && ['num', 'ans', 'frac', 'mixed', 'root', 'fn', 'pi', 'x', 'y', 'v', '('].includes(tk.k);
 
   function expr() {
     let a = term();
@@ -1768,6 +1795,8 @@ function parseArr(arr) {
       }
       case 'pi': return { k: 'pi' };
       case 'x': return { k: 'x' };
+      case 'y': return { k: 'y' };
+      case 'v': return { k: 'v', name: tk.v };
       case 'pow': throw new CalcError('An exponent needs a number in front of it.');
       case '(': {
         if (peek() && peek().k === ')') throw new CalcError('The parentheses ( ) are empty.');
@@ -1814,6 +1843,7 @@ function norm(n, notes) {
     case 'num': return n;
     case 'pi': return num(mkPi(Q(1n)));
     case 'x': return num(E.xval !== undefined ? E.xval : X_POLY); // xval: evaluate at an exact x
+    case 'y': case 'v': throw new CalcError('Other letters belong on the System solver and Simplify / factor pages.');
     case 'fn': {
       const a = norm(n.a, notes);
       return a === n.a ? n : { ...n, a };
@@ -2157,6 +2187,8 @@ function prRaw(n, hl) {
     case 'root': return rootHTML(pr(n.a, hl), n.b ? pr(n.b, hl) : null);
     case 'pi': return 'π';
     case 'x': return '<i class="xv">x</i>';
+    case 'y': return '<i class="xv">y</i>';
+    case 'v': return `<i class="xv">${n.name}</i>`;
     case 'fn': return fnHTML(n, hl);
     case 'bin': {
       if (n.bar) return fr(pr(n.a, hl), pr(n.b, hl));
@@ -2168,7 +2200,7 @@ function prRaw(n, hl) {
         return wrap ? `(${s})` : s;
       };
       const L = side(n.a, false), R = side(n.b, true);
-      const juxtapose = ['grp', 'root', 'pi', 'fn', 'x'].includes(n.b.k) || (n.b.style === 'irr' && exactIn(n.b.v, E.view));
+      const juxtapose = ['grp', 'root', 'pi', 'fn', 'x', 'y', 'v'].includes(n.b.k) || (n.b.style === 'irr' && exactIn(n.b.v, E.view));
       if (n.imp && juxtapose) return L + R; // 2(3+4), 2√3, 2π, 2sin(30°)
       return `${L}<span class="op">${OPS[n.op]}</span>${R}`;
     }
@@ -2452,6 +2484,723 @@ function solveEquation(items, at, opts) {
     : `no real solution${cplx.length ? ` <small>(${cplx.join(', ')})</small>` : ''}`);
   return { lines, value: xs.length === 1 ? xs[0] : null, unit: '', equation: { kind: 'x', html, xs } };
 }
+// ===== Algebra with letters: the Simplify / factor and System solver pages =====
+// A polynomial in letters is a Map from monomial key to { m, c }: m lists [atom, power] pairs in atom order and
+// c is an exact coefficient. An atom is a letter (a … z) or a function of an expression, like sin(2x) or √(x + 1),
+// which counts as one more letter. A rational expression is { n, d }, a polynomial over a polynomial.
+const ATOMS = new Map(); // atom key → { kind: 'var' | 'fn' | 'root', name, arg, k }
+const atomRank = a => (a.length === 1 ? 0 : 1);
+const cmpAtom = (a, b) => atomRank(a) - atomRank(b) || (a < b ? -1 : a > b ? 1 : 0);
+const monoKey = m => m.map(([a, e]) => `${a}^${e}`).join('·');
+const coefKey = c => (isQ(c) ? `${c.n}/${c.d}` : JSON.stringify(enV(c)));
+const mpZero = () => new Map();
+function mpConst(c) { const P = new Map(); if (!isZero(c)) P.set('', { m: [], c }); return P; }
+const mpAtom = a => new Map([[`${a}^1`, { m: [[a, 1]], c: Q(1n) }]]);
+const mpMono = (m, c = Q(1n)) => new Map([[monoKey(m), { m, c }]]);
+function mpAddTerm(P, m, c) {
+  const k = monoKey(m), t = P.get(k), s = t ? opV('+', t.c, c) : c;
+  if (isZero(s)) P.delete(k); else P.set(k, { m, c: s });
+}
+function mpAdd(A, B, sign = 1) {
+  const P = new Map(A);
+  for (const t of B.values()) mpAddTerm(P, t.m, sign < 0 ? negV(t.c) : t.c);
+  return P;
+}
+function monoMul(x, y) {
+  const out = [];
+  let i = 0, j = 0;
+  while (i < x.length || j < y.length) {
+    if (j >= y.length || (i < x.length && cmpAtom(x[i][0], y[j][0]) < 0)) out.push(x[i++]);
+    else if (i >= x.length || cmpAtom(x[i][0], y[j][0]) > 0) out.push(y[j++]);
+    else { out.push([x[i][0], x[i][1] + y[j][1]]); i++; j++; }
+  }
+  return out;
+}
+// x ÷ y, or null when y doesn't divide x.
+function monoDiv(x, y) {
+  const out = [];
+  let j = 0;
+  for (const [a, e] of x) {
+    if (j < y.length && cmpAtom(y[j][0], a) < 0) return null;
+    if (j < y.length && y[j][0] === a) {
+      if (y[j][1] > e) return null;
+      if (e > y[j][1]) out.push([a, e - y[j][1]]);
+      j++;
+    } else out.push([a, e]);
+  }
+  return j < y.length ? null : out;
+}
+function mpMul(A, B) {
+  const P = new Map();
+  for (const s of A.values()) for (const t of B.values()) mpAddTerm(P, monoMul(s.m, t.m), opV('*', s.c, t.c));
+  return P;
+}
+const mpScale = (A, c) => mpMul(A, mpConst(c));
+const mpIsConst = P => P.size === 0 || (P.size === 1 && P.has(''));
+const mpConstOf = P => (P.size === 0 ? Q(0n) : P.get('').c);
+const mpAtoms = P => [...new Set([...P.values()].flatMap(t => t.m.map(([a]) => a)))].sort(cmpAtom);
+const expIn = (m, a) => (m.find(([b]) => b === a) || [, 0])[1];
+const mpDeg = (P, a) => Math.max(0, ...[...P.values()].map(t => expIn(t.m, a)));
+const monoDeg = m => m.reduce((s, [, e]) => s + e, 0);
+const mpKey = P => [...P.values()].map(t => `${coefKey(t.c)}*${monoKey(t.m)}`).sort().join('+');
+// Graded order: higher total power first, then more of the earliest letter (x² before xy before y²).
+function cmpMono(x, y) {
+  const d = monoDeg(x) - monoDeg(y);
+  if (d) return d;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    const [a, e] = x[i] || [null, 0], [b, f] = y[i] || [null, 0];
+    if (a === b) { if (e !== f) return e - f; continue; }
+    if (a === null) return -1;
+    if (b === null) return 1;
+    return cmpAtom(a, b) < 0 ? 1 : -1;
+  }
+  return 0;
+}
+const mpTerms = P => [...P.values()].sort((s, t) => cmpMono(t.m, s.m));
+const mpLead = P => mpTerms(P)[0];
+// A ÷ B when B divides A exactly, else null.
+function mpDivExact(A, B) {
+  if (!B.size) throw new CalcError(DIV0);
+  const lb = mpLead(B), out = new Map();
+  let R = A;
+  for (let guard = 0; R.size; guard++) {
+    if (guard > 20000) return null;
+    const lr = mpLead(R), m = monoDiv(lr.m, lb.m);
+    if (!m) return null;
+    const c = opV('/', lr.c, lb.c);
+    mpAddTerm(out, m, c);
+    R = mpAdd(R, mpMul(mpMono(m, c), B), -1);
+  }
+  return out;
+}
+// The coefficient of each power of v: Map power → polynomial in the other letters.
+function coeffsIn(P, v) {
+  const out = new Map();
+  for (const t of P.values()) {
+    const e = expIn(t.m, v);
+    if (!out.has(e)) out.set(e, new Map());
+    mpAddTerm(out.get(e), t.m.filter(([a]) => a !== v), t.c);
+  }
+  return out;
+}
+// A polynomial in v alone as a dense list (lowest power first).
+function toDense(P, v) {
+  const cs = coeffsIn(P, v), out = Array(Math.max(0, ...cs.keys()) + 1).fill(Q(0n));
+  for (const [e, C] of cs) {
+    if (!mpIsConst(C)) throw new CalcError('Something here couldn’t be worked out.');
+    out[e] = mpConstOf(C);
+  }
+  return out;
+}
+// Put G in place of the letter u.
+function mpSubst(P, u, G) {
+  let out = mpZero();
+  const pw = [mpConst(Q(1n))];
+  for (const [e, C] of coeffsIn(P, u)) {
+    while (pw.length <= e) pw.push(mpMul(pw.at(-1), G));
+    out = mpAdd(out, mpMul(C, pw[e]));
+  }
+  return out;
+}
+function mpEval(P, env, mul = (a, b) => opV('*', a, b), add = (a, b) => opV('+', a, b), zero = Q(0n)) {
+  let s = zero;
+  for (const t of P.values()) {
+    let v = t.c;
+    for (const [a, e] of t.m) for (let i = 0; i < e; i++) v = mul(v, env.get(a));
+    s = add(s, v);
+  }
+  return s;
+}
+const mpEvalF = (P, env) => [...P.values()].reduce((s, t) => s + t.m.reduce((p, [a, e]) => p * env.get(a) ** e, toF(t.c)), 0);
+const mpEvalQ = (P, env) => mpEval(P, env, ARITH['*'], ARITH['+']);
+
+// ---- rational expressions ----
+const rx = (n, d = mpConst(Q(1n))) => ({ n, d });
+const rxConst = c => rx(mpConst(c));
+const rxIsConst = R => mpIsConst(R.n) && mpIsConst(R.d);
+const rxConstOf = R => opV('/', mpConstOf(R.n), mpConstOf(R.d));
+const rxKey = R => `${mpKey(R.n)}|${mpKey(R.d)}`;
+// Keeps a fraction small while it's built: a plain number on the bottom moves to the top, and a bottom that divides the top goes.
+function rxTidy(R) {
+  if (!R.d.size) throw new CalcError(DIV0);
+  if (mpIsConst(R.d)) return rx(mpScale(R.n, opV('/', Q(1n), mpConstOf(R.d))));
+  const q = mpDivExact(R.n, R.d);
+  return q ? rx(q) : R;
+}
+function rxAdd(A, B, sign = 1) {
+  if (mpKey(A.d) === mpKey(B.d)) return rxTidy(rx(mpAdd(A.n, B.n, sign), A.d));
+  return rxTidy(rx(mpAdd(mpMul(A.n, B.d), mpMul(B.n, A.d), sign), mpMul(A.d, B.d)));
+}
+const rxMul = (A, B) => rxTidy(rx(mpMul(A.n, B.n), mpMul(A.d, B.d)));
+function rxDiv(A, B) {
+  if (!B.n.size) throw new CalcError(DIV0);
+  return rxTidy(rx(mpMul(A.n, B.d), mpMul(A.d, B.n)));
+}
+function atomFor(kind, name, arg, k) {
+  const key = kind === 'var' ? name : kind === 'fn' ? `${name}(${rxKey(arg)})` : `√${k}(${rxKey(arg)})`;
+  if (!ATOMS.has(key)) ATOMS.set(key, { kind, name, arg, k });
+  return key;
+}
+function algToRX(a) {
+  if (isRF(a)) return rxDiv(algToRX(a.rn), algToRX(a.rd));
+  if (!isPoly(a)) return rxConst(a);
+  const P = mpZero();
+  for (const t of a.px) mpAddTerm(P, t.k ? [[atomFor('var', 'x'), t.k]] : [], t.c);
+  return rx(P);
+}
+
+// The parsed expression as a rational expression in its letters.
+function letterRX(n) {
+  switch (n.k) {
+    case 'num': return rxConst(n.v);
+    case 'pi': return rxConst(mkPi(Q(1n)));
+    case 'x': case 'y': return rx(mpAtom(atomFor('var', n.k)));
+    case 'v': return rx(mpAtom(atomFor('var', n.name)));
+    case 'ans':
+      if (!E.ans) throw new CalcError('There’s no answer yet — save one on the calculator first.');
+      return isAlg(E.ans) ? algToRX(E.ans) : rxConst(E.ans);
+    case 'grp': return letterRX(n.a);
+    case 'neg': { const a = letterRX(n.a); return rx(mpScale(a.n, Q(-1n)), a.d); }
+    case 'pct': return rxDiv(letterRX(n.a), rxConst(Q(100n)));
+    case 'frac': return rxDiv(letterRX(n.a), letterRX(n.b));
+    case 'mixed': {
+      const w = letterRX(n.w), f = rxDiv(letterRX(n.a), letterRX(n.b));
+      return rxAdd(w, f, rxIsConst(w) && signV(rxConstOf(w)) < 0 ? -1 : 1);
+    }
+    case 'bin': {
+      const a = letterRX(n.a), b = letterRX(n.b);
+      return n.op === '+' ? rxAdd(a, b) : n.op === '-' ? rxAdd(a, b, -1) : n.op === '*' ? rxMul(a, b) : rxDiv(a, b);
+    }
+    case 'pow': {
+      const a = letterRX(n.a), b = letterRX(n.b);
+      if (!rxIsConst(b)) throw new CalcError('A power with letters in it can’t be simplified here.');
+      const e = rxConstOf(b);
+      if (rxIsConst(a)) return rxConst(powV(rxConstOf(a), e));
+      if (!isQ(e) || e.d !== 1n) throw new CalcError('Only whole-number powers of letters can be simplified here.');
+      if (abs(e.n) > 64n) throw new CalcError('That power is too big to expand.');
+      let r = rxConst(Q(1n));
+      for (let i = 0n; i < abs(e.n); i++) r = rxMul(r, a);
+      return e.n < 0n ? rxDiv(rxConst(Q(1n)), r) : r;
+    }
+    case 'root': {
+      const a = letterRX(n.a), k = n.b ? letterRX(n.b) : rxConst(Q(2n));
+      if (!rxIsConst(k)) throw new CalcError('The small number on a root must be a whole number, like 3 for a cube root.');
+      if (rxIsConst(a)) return rxConst(rootV(rxConstOf(a), rxConstOf(k)));
+      const kv = rxConstOf(k);
+      if (!isQ(kv) || kv.d !== 1n || kv.n < 2n) throw new CalcError('The small number on a root must be a whole number, like 3 for a cube root.');
+      return rx(mpAtom(atomFor('root', 'root', rxReduce(a).rx, Number(kv.n))));
+    }
+    case 'fn': {
+      const a = letterRX(n.a);
+      if (rxIsConst(a)) return rxConst(trigV(n.name, rxConstOf(a)));
+      return rx(mpAtom(atomFor('fn', n.name, rxReduce(a).rx)));
+    }
+  }
+  throw new CalcError('Something here couldn’t be worked out.');
+}
+
+// ---- factoring polynomials in letters (fraction coefficients) ----
+const mpAllQ = P => [...P.values()].every(t => isQ(t.c));
+// P = c · P′, where P′ has whole, coprime coefficients and a positive leading term.
+function mpContent(P) {
+  const ts = [...P.values()], L = ts.reduce((l, t) => lcm(l, t.c.d), 1n);
+  let g = 0n;
+  for (const t of ts) g = gcd(g, t.c.n * (L / t.c.d));
+  let c = Q(g, L);
+  if (signV(mpLead(P).c) < 0) c = negQ(c);
+  return { c, p: mpScale(P, Q(c.d, c.n)) };
+}
+// The highest power of each letter that divides every term.
+function mpMonoGcd(P) {
+  let m = null;
+  for (const t of P.values()) m = m === null ? t.m.slice() : m.map(([a, e]) => [a, Math.min(e, expIn(t.m, a))]).filter(([, e]) => e > 0);
+  return m || [];
+}
+// Whole-number polynomial in one letter (lowest power first, a[0] ≠ 0, positive lead): its factors over the fractions.
+function factorIntUni(a) {
+  const out = [];
+  if (a.length > 2) {
+    const cands = new Map();
+    for (const p of divisorsOf(a[0])) for (const q of divisorsOf(a.at(-1))) for (const s of [1n, -1n]) { const r = Q(s * p, q); cands.set(`${r.n}/${r.d}`, r); }
+    for (const r of cands.values()) {
+      const isRoot = () => { const n = a.length - 1; let s = 0n; a.forEach((x, i) => { s += x * r.n ** BigInt(i) * r.d ** BigInt(n - i); }); return s === 0n; };
+      while (a.length > 2 && isRoot()) { a = intDivExact(a, [-r.n, r.d]); out.push([-r.n, r.d]); }
+      if (a.length <= 2) break;
+    }
+  }
+  if (a.length - 1 >= 4) { const sq = splitQuadratics(a); out.push(...sq.quads); a = sq.rest; }
+  if (a.length > 1) out.push(a);
+  return out;
+}
+const MP_FACTOR_CACHE = new Map();
+// c × (factors with multiplicity), each factor with whole coprime coefficients and a positive leading term.
+// Only for fraction coefficients; anything else comes back whole.
+function factorMP(P) {
+  if (!P.size) return { c: Q(0n), fs: [] };
+  if (mpIsConst(P)) return { c: mpConstOf(P), fs: [] };
+  if (!mpAllQ(P)) return { c: Q(1n), fs: [{ p: P, m: 1 }] };
+  const key = mpKey(P);
+  if (MP_FACTOR_CACHE.has(key)) return MP_FACTOR_CACHE.get(key);
+  const { c, p: p0 } = mpContent(P);
+  let p = p0;
+  const fs = [];
+  const mono = mpMonoGcd(p);
+  if (mono.length) {
+    for (const [a, e] of mono) fs.push({ p: mpAtom(a), m: e });
+    p = mpDivExact(p, mpMono(mono));
+  }
+  if (!mpIsConst(p)) for (const f of primFactors(p)) fs.push({ p: f, m: 1 });
+  const grouped = new Map();
+  for (const f of fs) { const k = mpKey(f.p); grouped.set(k, { p: f.p, m: (grouped.get(k)?.m || 0) + f.m }); }
+  // single letters first (a before b), then brackets, smallest first
+  const atomOf = f => (f.p.size === 1 ? [...f.p.values()][0].m[0][0] : null);
+  const out = { c, fs: [...grouped.values()].sort((x, y) => (!atomOf(x) - !atomOf(y)) || (atomOf(x) ? cmpAtom(atomOf(x), atomOf(y))
+    : monoDeg(mpLead(x.p).m) - monoDeg(mpLead(y.p).m) || cmpMono(mpLead(y.p).m, mpLead(x.p).m))) };
+  MP_FACTOR_CACHE.set(key, out);
+  return out;
+}
+const pieces = g => factorMP(g).fs.flatMap(({ p, m }) => Array(m).fill(p));
+// p: whole coprime coefficients, positive lead, no letter dividing every term.
+function primFactors(p) {
+  const atoms = mpAtoms(p);
+  if (!atoms.length || p.size === 1) return [p];
+  if (atoms.length === 1) return factorIntUni(toDense(p, atoms[0]).map(c => c.n)).map(f => uniToMP(f, atoms[0]));
+  if (atoms.length === 2) { const h = homogeneousSplit(p, atoms); if (h) return h; }
+  for (const v of atoms) { // a factor in the other letters only: ax + ay + bx + by = (x + y)(a + b)
+    const g = [...coeffsIn(p, v).values()].reduce(mpGcd);
+    if (!mpIsConst(g)) return [...pieces(g), ...pieces(mpDivExact(p, g))];
+  }
+  for (const v of [...atoms].sort((a, b) => mpDeg(p, a) - mpDeg(p, b))) {
+    const f = linearFactor(p, v);
+    if (f) return [...pieces(f), ...pieces(mpDivExact(p, f))];
+  }
+  return [p];
+}
+function uniToMP(f, v) {
+  const P = mpZero();
+  f.forEach((c, k) => { if (c) mpAddTerm(P, k ? [[v, k]] : [], Q(c)); });
+  return mpContent(P).p;
+}
+// Every term the same total power, in two letters: set the second to 1, factor, and put it back (x² − y² = (x − y)(x + y)).
+function homogeneousSplit(p, [u, w]) {
+  const ts = [...p.values()], D = monoDeg(ts[0].m);
+  if (!ts.every(t => monoDeg(t.m) === D)) return null;
+  const a = Array(D + 1).fill(0n);
+  for (const t of ts) a[expIn(t.m, u)] = t.c.n;
+  return factorIntUni(a).map(f => {
+    const P = mpZero(), n = f.length - 1;
+    f.forEach((c, k) => { if (c) mpAddTerm(P, monoMul(k ? [[u, k]] : [], n - k ? [[w, n - k]] : []), Q(c)); });
+    return mpContent(P).p;
+  });
+}
+function mpGcd(A, B) {
+  if (!A.size) return B;
+  if (!B.size) return A;
+  if (mpIsConst(A) || mpIsConst(B)) return mpConst(Q(1n));
+  let g = mpConst(Q(1n)), rest = B;
+  for (const { p, m } of factorMP(A).fs) {
+    for (let i = 0; i < m; i++) { const q = mpDivExact(rest, p); if (!q) break; rest = q; g = mpMul(g, p); }
+  }
+  return g;
+}
+// Every divisor of a polynomial with whole coefficients (up to sign), capped so the search stays quick.
+function mpDivisors(D) {
+  const f = factorMP(D);
+  let out = divisorsOf(f.c.n).slice(0, 200).map(n => mpConst(Q(n)));
+  for (const { p, m } of f.fs) {
+    const next = [];
+    for (const d of out) { let q = d; for (let i = 0; i <= m; i++) { next.push(q); q = mpMul(q, p); } }
+    out = next;
+    if (out.length > 3000) break;
+  }
+  return out;
+}
+const PROBES = [[2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n], [23n, 29n, 31n, 37n, 41n, 43n, 47n, 53n]];
+// A factor a·v + b of p, with a dividing p's top coefficient in v and b its bottom one (each a polynomial in the
+// other letters). Candidates are checked with numbers in place of the other letters first, then by dividing.
+function linearFactor(p, v) {
+  const cs = coeffsIn(p, v), n = Math.max(...cs.keys());
+  if (n < 2 || !cs.get(0)) return null;
+  const As = mpDivisors(cs.get(n)), Bs = mpDivisors(cs.get(0));
+  if (As.length * Bs.length > 8000) return null;
+  const atoms = mpAtoms(p), envs = PROBES.map(ps => new Map(atoms.map((a, i) => [a, Q(ps[i % ps.length] + BigInt(i))])));
+  for (const A of As) for (const B0 of Bs) for (const s of [1n, -1n]) {
+    const B = s < 0n ? mpScale(B0, Q(-1n)) : B0;
+    const ok = envs.every(env => {
+      const a = mpEvalQ(A, env);
+      if (a.n === 0n) return true;
+      env.set(v, ARITH['/'](negQ(mpEvalQ(B, env)), a));
+      const z = mpEvalQ(p, env);
+      env.delete(v);
+      return z.n === 0n;
+    });
+    if (!ok) continue;
+    const f = mpAdd(mpMul(A, mpAtom(v)), B), q = mpDivExact(p, f);
+    if (q && !mpIsConst(q)) return mpContent(f).p;
+  }
+  return null;
+}
+// sin²(u) + cos²(u) = 1, wherever the two appear with the same coefficient and the same other letters.
+function trigTidy(P) {
+  for (let guard = 0; guard < 64; guard++) {
+    let hit = null;
+    for (const t of P.values()) {
+      const s = t.m.find(([a, e]) => e >= 2 && ATOMS.get(a)?.kind === 'fn' && ATOMS.get(a).name === 'sin');
+      if (!s) continue;
+      const ck = 'cos' + s[0].slice(3);
+      if (!ATOMS.has(ck)) continue;
+      const rest = t.m.map(([a, e]) => [a, a === s[0] ? e - 2 : e]).filter(([, e]) => e > 0);
+      const u = P.get(monoKey(monoMul(rest, [[ck, 2]])));
+      if (u && isZero(opV('-', u.c, t.c))) { hit = { t, u, rest }; break; }
+    }
+    if (!hit) return P;
+    P = new Map(P);
+    P.delete(monoKey(hit.t.m));
+    P.delete(monoKey(hit.u.m));
+    mpAddTerm(P, hit.rest, hit.t.c);
+  }
+  return P;
+}
+// √a · √a = a: a root to a power at least its index comes out (letters under an even root are taken to be ≥ 0).
+function rootTidy(P) {
+  let out = mpZero();
+  for (const t of P.values()) {
+    const m = [];
+    let extra = mpConst(t.c);
+    for (const [a, e] of t.m) {
+      const at = ATOMS.get(a);
+      if (at?.kind === 'root' && e >= at.k && mpIsConst(at.arg.d)) {
+        const base = mpScale(at.arg.n, opV('/', Q(1n), mpConstOf(at.arg.d)));
+        for (let i = 0; i < Math.floor(e / at.k); i++) extra = mpMul(extra, base);
+        if (e % at.k) m.push([a, e % at.k]);
+      } else m.push([a, e]);
+    }
+    out = mpAdd(out, mpMul(extra, mpMono(m)));
+  }
+  return out;
+}
+// Lowest terms: factor top and bottom and cancel what they share. Returns the reduced fraction, the factorisations
+// before cancelling, and the cancelled factors (which can't be 0 where the original made sense).
+function rxReduce(R) {
+  const n1 = trigTidy(R.n), d1 = trigTidy(R.d), pyth = mpKey(n1) !== mpKey(R.n) || mpKey(d1) !== mpKey(R.d);
+  const n = rootTidy(n1), d = rootTidy(d1), roots = mpKey(n) !== mpKey(n1) || mpKey(d) !== mpKey(d1);
+  if (!d.size) throw new CalcError(DIV0);
+  if (mpIsConst(d)) return { rx: rx(mpScale(n, opV('/', Q(1n), mpConstOf(d)))), cancelled: [], pyth, roots };
+  if (!mpAllQ(n) || !mpAllQ(d)) { const q = mpDivExact(n, d); return { rx: q ? rx(q) : rx(n, d), cancelled: q ? [d] : [], pyth, roots }; }
+  const fn = factorMP(n), fd = factorMP(d);
+  const nfs = fn.fs.map(f => ({ ...f })), dfs = fd.fs.map(f => ({ ...f })), cancelled = [];
+  for (const a of nfs) {
+    const b = dfs.find(b => mpKey(b.p) === mpKey(a.p)), k = b ? Math.min(a.m, b.m) : 0;
+    if (k) { a.m -= k; b.m -= k; cancelled.push(a.p); }
+  }
+  const build = fs => fs.reduce((acc, f) => { for (let i = 0; i < f.m; i++) acc = mpMul(acc, f.p); return acc; }, mpConst(Q(1n)));
+  const N = build(nfs), D = build(dfs), c = opV('/', fn.c, fd.c);
+  const out = mpIsConst(D) ? rx(mpScale(N, opV('/', c, mpConstOf(D)))) : rx(mpScale(N, c), D);
+  return { rx: out, cancelled, fn, fd, pyth, roots };
+}
+
+// ---- showing letters ----
+function atomHTML(a, e, view) {
+  const at = ATOMS.get(a), sup = e > 1 ? `<sup class="sup">${e}</sup>` : '';
+  if (!at || at.kind === 'var') return `<i class="xv">${a}</i>${sup}`;
+  if (at.kind === 'fn') return `<span class="fnn">${FN_LABEL[at.name]}</span>${sup}(${rxHTML(at.arg, view)})`;
+  const r = rootHTML(rxHTML(at.arg, view), at.k === 2 ? null : String(at.k));
+  return e > 1 ? `(${r})${sup}` : r;
+}
+const monoHTML = (m, view) => m.map(([a, e]) => atomHTML(a, e, view)).join('');
+function letterTermHTML(c, m, view) {
+  const neg = signV(c) < 0, a = neg ? negV(c) : c, mh = monoHTML(m, view);
+  if (!m.length) return { neg, html: valueHTML(a, view) };
+  if (isQ(a) && (view !== 'dec' || a.d === 1n)) {
+    const top = (a.n === 1n ? '' : groupInt(String(a.n))) + mh;
+    return { neg, html: a.d === 1n ? top : fr(top, groupInt(String(a.d))) };
+  }
+  const vh = valueHTML(a, view);
+  return { neg, html: (radIsSum(a) || (isPi(a) && a.pp.length > 1) ? `(${vh})` : vh) + mh };
+}
+function mpHTML(P, view = S.view) {
+  if (!P.size) return '0';
+  return mpTerms(P).map((t, i) => {
+    const { neg, html } = letterTermHTML(t.c, t.m, view);
+    return i ? `<span class="op">${neg ? MINUS : '+'}</span>${html}` : (neg ? MINUS : '') + html;
+  }).join('');
+}
+const rxHTML = (R, view = S.view) => (mpIsConst(R.d) ? mpHTML(mpScale(R.n, opV('/', Q(1n), mpConstOf(R.d))), view) : fr(mpHTML(R.n, view), mpHTML(R.d, view)));
+// c · x² · (x + y)(x − y)³, from factorMP.
+function factHTML(f, view = S.view) {
+  if (!f.fs.length) return valueHTML(f.c, view);
+  const lone = f.fs.length === 1 && f.fs[0].m === 1 && f.fs[0].p.size > 1;
+  const body = f.fs.map(({ p, m }) => {
+    const t = p.size === 1 ? [...p.values()][0] : null;
+    if (t && isOne(t.c) && t.m.length === 1) return atomHTML(t.m[0][0], t.m[0][1] * m, view);
+    return lone ? mpHTML(p, view) : `(${mpHTML(p, view)})${m > 1 ? `<sup class="sup">${m}</sup>` : ''}`;
+  }).join('');
+  const lead = isOne(f.c) ? '' : isMinusOne(f.c) ? MINUS : valueHTML(f.c, view);
+  return lone && lead ? `${lead}(${body})` : lead + body;
+}
+// 360 = 2³ × 3² × 5
+function primeHTML(q) {
+  if (!isQ(q) || q.d !== 1n || abs(q.n) < 4n || abs(q.n) > 10n ** 15n) return null;
+  let n = abs(q.n);
+  const ps = [];
+  for (let p = 2n; p * p <= n; p += p === 2n ? 1n : 2n) { let k = 0; while (n % p === 0n) { n /= p; k++; } if (k) ps.push([p, k]); }
+  if (n > 1n) ps.push([n, 1]);
+  if (ps.length === 1 && ps[0][1] === 1) return null;
+  return (q.n < 0n ? MINUS : '') + ps.map(([p, k]) => groupInt(String(p)) + (k > 1 ? `<sup class="sup">${k}</sup>` : '')).join(' × ');
+}
+
+// ---- Simplify / factor ----
+function simplifyLetters(items) {
+  const view = S.view, ast = parseArr(items), raw = letterRX(ast), red = rxReduce(raw), R = red.rx;
+  const lines = [[null, pr(ast)]];
+  const rawH = rxHTML(raw, view), simp = rxHTML(R, view);
+  if (rawH !== lines[0][1]) lines.push([mpIsConst(raw.d) ? 'Expand and collect like terms' : 'Expand, and put it all over one bottom', rawH]);
+  if (red.pyth) lines.push(['Use sin² + cos² = 1', rxHTML(rx(trigTidy(raw.n), trigTidy(raw.d)), view)]);
+  if (red.roots) lines.push([`Use ${rootHTML('<i class="xv">a</i>')} · ${rootHTML('<i class="xv">a</i>')} = <i class="xv">a</i>`, rxHTML(rx(rootTidy(trigTidy(raw.n)), rootTidy(trigTidy(raw.d))), view)]);
+  if (red.cancelled.length) {
+    lines.push(['Factor the top and the bottom', fr(factHTML(red.fn, view), factHTML(red.fd, view))]);
+    lines.push([`Cancel ${red.cancelled.map(p => `(${mpHTML(p, view)})`).join(', ')}`, simp]);
+  }
+  let fact = null, gcf = null;
+  if (rxIsConst(R)) fact = primeHTML(rxConstOf(R));
+  else {
+    const fn = factorMP(R.n), fd = mpIsConst(R.d) ? null : factorMP(R.d);
+    fact = fd ? fr(factHTML(fn, view), factHTML(fd, view)) : factHTML(fn, view);
+    // ½(2x + 1) isn't worth showing for x + ½; 3(2x + 3) is
+    const whole = q => isQ(q) && q.d === 1n;
+    if (!fd && fn.fs.length === 1 && fn.fs[0].m === 1 && fn.fs[0].p.size > 1 && !whole(fn.c)) fact = null;
+    // the common factor first, when there's more left to do after it
+    const mono = R.n.size > 1 && mpAllQ(R.n) ? mpMonoGcd(mpContent(R.n).p) : [];
+    const { c } = R.n.size > 1 && mpAllQ(R.n) ? mpContent(R.n) : { c: Q(1n) };
+    if (!fd && (mono.length || (whole(c) && !isOne(c)))) {
+      const rest = mpDivExact(mpScale(R.n, Q(c.d, c.n)), mpMono(mono));
+      gcf = (isOne(c) ? '' : isMinusOne(c) ? MINUS : valueHTML(c, view)) + monoHTML(mono, view) + `(${mpHTML(rest, view)})`;
+    }
+    if (fact === simp) fact = null;
+  }
+  return { lines, simp, fact, gcf, value: R };
+}
+
+// ---- exact roots of a polynomial in one letter ----
+// Each root is { v, html, f }: v the exact value when the number system can hold it (null for cubic-formula
+// answers, which are shown as their formula), f a decimal.
+const rootRec = (v, view) => ({ v, html: valueHTML(v, view), f: toF(v) });
+function cubicRoots(p, view) { // irreducible a x³ + b x² + c x + d, whole numbers
+  const [d, c, b, a] = p.map(n => Q(n)), M = ARITH['*'], A = ARITH['+'], S_ = ARITH['-'], Dv = ARITH['/'];
+  const shift = Dv(negQ(b), M(Q(3n), a));
+  const P = Dv(S_(M(M(Q(3n), a), c), M(b, b)), M(Q(3n), M(a, a)));
+  const q = Dv(A(S_(M(Q(2n), powQ(b, 3n)), M(Q(9n), M(a, M(b, c)))), M(Q(27n), M(M(a, a), d))), M(Q(27n), powQ(a, 3n)));
+  const disc = A(Dv(M(q, q), Q(4n)), Dv(powQ(P, 3n), Q(27n)));
+  const head = shift.n === 0n ? '' : valueHTML(shift, view) + '<span class="op">+</span>';
+  if (P.n === 0n) { // (x − h)³ = k: just a cube root
+    const t = rootQ(negQ(q), 3n);
+    return { roots: [{ v: shift.n === 0n ? t : null, html: head + valueHTML(t, view), f: qF(shift) + Math.cbrt(qF(negQ(q))) }], nonReal: 2, how: 'Take the cube root' };
+  }
+  if (disc.n > 0n) { // one real root: Cardano
+    const u = Dv(negQ(q), Q(2n)), s = rootQ(disc, 2n), cb = v => rootHTML(valueHTML(v, view), '3');
+    const html = head + cb(opV('+', u, s)) + '<span class="op">+</span>' + cb(opV('-', u, s));
+    const f = qF(shift) + Math.cbrt(qF(u) + toF(s)) + Math.cbrt(qF(u) - toF(s));
+    return { roots: [{ v: null, html, f }], nonReal: 2, how: 'Cubic formula (Cardano)' };
+  }
+  // three real roots: the trig form of the cubic formula (angles in radians)
+  const r = opV('*', Q(2n), rootQ(Dv(negQ(P), Q(3n)), 2n)), arg = opV('*', Dv(M(Q(3n), q), M(Q(2n), P)), rootQ(Dv(Q(-3n), P), 2n));
+  const roots = [0, 1, 2].map(k => ({
+    v: null,
+    html: `${head}${valueHTML(r, view)}<span class="fnn">cos</span>(${fr('1', '3')}<span class="fnn">arccos</span>(${valueHTML(arg, view)})${k ? `<span class="op">${MINUS}</span>${fr(`${k * 2}π`, '3')}` : ''})`,
+    f: qF(shift) + toF(r) * Math.cos(Math.acos(Math.max(-1, Math.min(1, toF(arg)))) / 3 - 2 * Math.PI * k / 3),
+  }));
+  return { roots, nonReal: 0, how: 'Cubic formula, trig form (three real roots; angles in radians)' };
+}
+// Roots of t² + B t + C with exact (root-sum) coefficients.
+function quadV(B, C, shift) {
+  const D = opV('-', opV('*', B, B), opV('*', Q(4n), C));
+  if (signV(D) < 0) return { roots: [], nonReal: 2 };
+  const s = rootV(D, Q(2n));
+  return { roots: [opV('-', negV(B), s), opV('+', negV(B), s)].map(t => opV('+', opV('/', t, Q(2n)), shift)), nonReal: 0 };
+}
+function quarticRoots(p, view) { // irreducible, whole numbers
+  const [e, d, c, b, a] = p.map(n => Q(n)), M = ARITH['*'], A = ARITH['+'], S_ = ARITH['-'], Dv = ARITH['/'];
+  const B = Dv(b, a), C = Dv(c, a), Dd = Dv(d, a), Ee = Dv(e, a), shift = Dv(negQ(B), Q(4n));
+  const P = S_(C, Dv(M(Q(3n), M(B, B)), Q(8n)));
+  const q = A(S_(Dd, Dv(M(B, C), Q(2n))), Dv(powQ(B, 3n), Q(8n)));
+  const r = A(S_(Ee, Dv(M(B, Dd), Q(4n))), S_(Dv(M(M(B, B), C), Q(16n)), Dv(M(Q(3n), powQ(B, 4n)), Q(256n))));
+  const out = (vs, nonReal, how) => ({ roots: vs.map(v => rootRec(v, view)), nonReal, how });
+  if (q.n === 0n) { // only even powers of t: t² = z
+    const z = quadV(P, r, Q(0n));
+    if (!z.roots.length) return out([], 4, 'Only even powers: put z = x², then z has no real values');
+    const vs = [];
+    let nonReal = 0;
+    for (const zv of z.roots) {
+      if (signV(zv) < 0) { nonReal += 2; continue; }
+      const t = rootV(zv, Q(2n));
+      vs.push(opV('+', negV(t), shift), opV('+', t, shift));
+    }
+    return out(vs, nonReal, 'Only even powers: put z = x², solve for z, then x = ±√z');
+  }
+  // Ferrari: needs a fraction root m of 8m³ + 8Pm² + (2P² − 8r)m − q² = 0
+  const res = factorQ([negQ(M(q, q)), S_(M(Q(2n), M(P, P)), M(Q(8n), r)), M(Q(8n), P), Q(8n)]);
+  const m = res.roots.map(z => z.r).find(z => isQ(z) && z.n > 0n);
+  if (!m) return null;
+  const s = rootQ(M(Q(2n), m), 2n), k = opV('/', opV('*', s, q), M(Q(4n), m)), base = A(Dv(P, Q(2n)), m);
+  const one = quadV(negV(s), opV('+', base, k), shift), two = quadV(s, opV('-', base, k), shift);
+  return out([...one.roots, ...two.roots], one.nonReal + two.nonReal, 'Quartic formula (Ferrari): split into two quadratics');
+}
+// Solving cs = 0 (dense, lowest power first) for the letter vn, with the working.
+function rootsWork(cs, vn, view) {
+  const V = `<i class="xv">${vn}</i>`, inV = h => h.replaceAll('<i class="xv">x</i>', V);
+  const lines = [], roots = [];
+  let nonReal = 0;
+  cs = trim(cs);
+  const deg = cs.length - 1;
+  if (deg < 1) return { lines, roots, nonReal, always: isZero(cs[0]) };
+  if (!cs.every(isQ)) { // coefficients like √2
+    if (deg === 1) roots.push(rootRec(opV('/', negV(cs[0]), cs[1]), view));
+    else if (deg === 2 && cs.every(radable)) {
+      const z = quadV(opV('/', cs[1], cs[2]), opV('/', cs[0], cs[2]), Q(0n));
+      roots.push(...z.roots.map(v => rootRec(v, view)));
+      nonReal = z.nonReal;
+      lines.push(['Quadratic formula', roots.map(r => `${V} = ${r.html}`).join(' &ensp;or&ensp; ') || 'no real roots']);
+    } else {
+      for (const z of cleanRoots(numRoots(cs.map(toF)))) z.im ? (nonReal += 2 * z.m) : roots.push({ v: null, html: '≈ ' + fmtFloat(z.re, 8), f: z.re });
+      lines.push(['No tidy exact form with these coefficients, so here are decimals', roots.map(r => `${V} ${r.html}`).join(' &ensp;or&ensp; ')]);
+    }
+    return { lines, roots, nonReal };
+  }
+  const L = cs.reduce((l, c) => lcm(l, c.d), 1n);
+  let ints = cs.map(c => c.n * (L / c.d)), g = 0n;
+  for (const n of ints) g = gcd(g, n);
+  if (ints.at(-1) < 0n) g = -g;
+  ints = ints.map(n => n / g);
+  let zeros = 0;
+  while (ints[0] === 0n) { ints.shift(); zeros++; }
+  const parts = [...Array(zeros).fill([0n, 1n]), ...(ints.length > 1 ? factorIntUni(ints) : [])];
+  const groups = new Map();
+  for (const pc of parts) { const k = pc.join(','); groups.set(k, { p: pc, m: (groups.get(k)?.m || 0) + 1 }); }
+  const gs = [...groups.values()].sort((x, y) => x.p.length - y.p.length);
+  const pcHTML = pc => inV(polyHTML(undense(pc.map(n => Q(n))), view));
+  if (gs.length > 1 || gs[0].m > 1) lines.push(['Factor', gs.map(({ p, m }) => (p.length === 2 && p[0] === 0n ? V : `(${pcHTML(p)})`) + (m > 1 ? `<sup class="sup">${m}</sup>` : '')).join('') + ' = 0']);
+  for (const { p, m } of gs) {
+    const d = p.length - 1, add = rs => roots.push(...rs.map(r => ({ ...r, m })));
+    if (d === 1) add([rootRec(Q(-p[0], p[1]), view)]);
+    else if (d === 2) {
+      const [C, B, A] = p, Dn = B * B - 4n * A * C;
+      lines.push([`Quadratic formula on ${pcHTML(p)} = 0`, `${V} = ${fr(`${B === 0n ? '±' : `${valueHTML(Q(-B), view)}<span class="op">±</span>`}${rootHTML(String(Dn).replace('-', MINUS))}`, String(2n * A))}`]);
+      if (Dn < 0n) { nonReal += 2 * m; lines.push(['The number under the root is negative, so no real answers here', '—']); continue; }
+      const z = quadV(Q(B, A), Q(C, A), Q(0n));
+      add(z.roots.map(v => rootRec(v, view)));
+    } else {
+      const ex = d === 3 ? cubicRoots(p, view) : d === 4 ? quarticRoots(p, view) : null;
+      if (ex) {
+        lines.push([`${ex.how} on ${pcHTML(p)} = 0`, ex.roots.map(r => `${V} = ${r.html}`).join(' &ensp;or&ensp; ') || 'no real roots']);
+        add(ex.roots);
+        nonReal += ex.nonReal * m;
+      } else {
+        const rs = [];
+        for (const z of cleanRoots(numRoots(p.map(Number)))) z.im ? (nonReal += 2 * z.m * m) : rs.push({ v: null, html: '≈ ' + fmtFloat(z.re, 8), f: z.re });
+        lines.push([d >= 5 ? `No formula exists for degree ${d} (Abel–Ruffini), and ${pcHTML(p)} doesn’t factor, so here are decimals` : `${pcHTML(p)} has no neat exact form, so here are decimals`,
+          rs.map(r => `${V} ${r.html}`).join(' &ensp;or&ensp; ') || 'no real roots']);
+        add(rs);
+      }
+    }
+  }
+  roots.sort((x, y) => x.f - y.f);
+  return { lines, roots, nonReal };
+}
+
+// ---- System solver ----
+const ROW_NO = ['①', '②'];
+// One typed equation as F(x, y) = 0 with F a polynomial; den is the bottom that was cleared (≠ 0 at any answer).
+function eqOf(items, no, lone) {
+  const at = items.findIndex(isEqSign), sideOf = arr => letterRX(parseArr(arr));
+  let L = items, R = null;
+  if (at >= 0) {
+    L = items.slice(0, at); R = items.slice(at + 1);
+    if (R.some(isEqSign)) throw new CalcError(`Equation ${no} has more than one =.`);
+    if (!L.length || !R.length) throw new CalcError(`Equation ${no} needs something on both sides of the =.`);
+  } else if (!lone || deepHas(items, 'y')) { L = [{ t: 'y' }]; R = items; } // a bare 2x + 3 means y = 2x + 3
+  const red = rxReduce(R ? rxAdd(sideOf(L), sideOf(R), -1) : sideOf(L)).rx;
+  for (const a of [...mpAtoms(red.n), ...mpAtoms(red.d)]) {
+    if (a === 'x' || a === 'y') continue;
+    throw new CalcError(ATOMS.get(a)?.kind === 'var' ? `Equations here use x and y (equation ${no} has ${a}).` : `Equation ${no} has a function of x or y in it; the solver works with polynomials.`);
+  }
+  return { F: red.n, den: red.d, typed: R ? `${pr(parseArr(L))} = ${pr(parseArr(R))}` : `${pr(parseArr(L))} = 0`, L, no };
+}
+const ptOf = (x, y) => ({ x, y });
+function solveOne(eq, view) {
+  const atoms = mpAtoms(eq.F), lines = [[null, eq.typed]];
+  if (atoms.length > 1) throw new CalcError('One equation with both x and y is a whole curve of answers — add a second equation (↓) to pin them down.');
+  if (!atoms.length) return { lines, verdict: isZero(mpConstOf(eq.F)) ? 'Always true' : 'Never true — no solution', pts: [] };
+  const vn = atoms[0], fh = `${mpHTML(eq.F, view)} = 0`;
+  if (fh !== eq.typed) lines.push(['Move everything to one side', fh]);
+  const w = rootsWork(toDense(eq.F, vn), vn, view);
+  lines.push(...w.lines);
+  const roots = w.roots.filter(r => !(eq.den.size > 1 && Math.abs(mpEvalF(eq.den, new Map([[vn, r.f]]))) < 1e-9));
+  return { lines, one: vn, roots, nonReal: w.nonReal, pts: [] };
+}
+// Put u = g(w) from one equation into the other.
+function bySubstitution(eqs, i, u, g, view) {
+  const j = 1 - i, w = u === 'y' ? 'x' : 'y', U = `<i class="xv">${u}</i>`, W = `<i class="xv">${w}</i>`, gh = mpHTML(g, view);
+  const lines = [];
+  const already = eqs[i].L.length === 1 && eqs[i].L[0].t === u;
+  lines.push([already ? `${ROW_NO[i]} already gives ${U}` : `Solve ${ROW_NO[i]} for ${U}`, `${U} = ${gh}`]);
+  const P = mpSubst(eqs[j].F, u, g);
+  lines.push([`Put that in place of ${U} in ${ROW_NO[j]}, and move everything to one side`, `${mpHTML(P, view)} = 0`]);
+  const lin = eqs.every(e => mpDeg(e.F, 'x') <= 1 && mpDeg(e.F, 'y') <= 1);
+  if (mpIsConst(P)) return { lines, verdict: isZero(mpConstOf(P)) ? `Always true: they’re the same ${lin ? 'line' : 'curve'}, so there are infinitely many solutions` : `Never true: they never meet${lin ? ' (the lines are parallel)' : ''}, so there’s no solution`, pts: [] };
+  const z = rootsWork(toDense(P, w), w, view);
+  lines.push(...z.lines);
+  const pts = z.roots.map(r => {
+    const env = new Map([[w, r.v]]), envF = new Map([[w, r.f]]);
+    const uv = r.v ? rootRec(mpEval(g, env), view) : { v: null, html: '≈ ' + fmtFloat(mpEvalF(g, envF), 8), f: mpEvalF(g, envF) };
+    return u === 'y' ? ptOf(r, uv) : ptOf(uv, r);
+  });
+  if (pts.length) lines.push([`Put ${pts.length > 1 ? 'each' : 'it'} into ${U} = ${gh}`, pts.map(p => `${U} = ${(u === 'y' ? p.y : p.x).html}`).join(' &ensp; ')]);
+  return { lines, pts, nonReal: z.nonReal };
+}
+// Both equations have u only to the first power: a(w)·u + b(w) = 0. Eliminate u.
+function byElimination(eqs, u, view) {
+  const w = u === 'y' ? 'x' : 'y', U = `<i class="xv">${u}</i>`;
+  const ab = eqs.map(e => { const cs = coeffsIn(e.F, u); return [cs.get(1) || mpZero(), cs.get(0) || mpZero()]; });
+  const [[a1, b1], [a2, b2]] = ab, R = mpAdd(mpMul(a1, b2), mpMul(a2, b1), -1);
+  const lines = [[`Multiply ${ROW_NO[0]} by (${mpHTML(a2, view)}) and ${ROW_NO[1]} by (${mpHTML(a1, view)}), and subtract: ${U} drops out`, `${mpHTML(R, view)} = 0`]];
+  if (mpIsConst(R)) return { lines, verdict: isZero(mpConstOf(R)) ? 'They share a whole curve, so there are infinitely many solutions' : 'Never true, so there’s no solution', pts: [] };
+  const z = rootsWork(toDense(R, w), w, view);
+  lines.push(...z.lines);
+  const pts = [];
+  for (const r of z.roots) {
+    const [a, b] = ab.map(([a, b]) => [a, b]).find(([a]) => Math.abs(mpEvalF(a, new Map([[w, r.f]]))) > 1e-9) || [];
+    if (!a) continue; // both a's are 0 here: no single point
+    const env = new Map([[w, r.v]]), envF = new Map([[w, r.f]]);
+    const uv = r.v ? rootRec(opV('/', negV(mpEval(b, env)), mpEval(a, env)), view) : { v: null, html: '≈ ' + fmtFloat(-mpEvalF(b, envF) / mpEvalF(a, envF), 8), f: -mpEvalF(b, envF) / mpEvalF(a, envF) };
+    pts.push(u === 'y' ? ptOf(r, uv) : ptOf(uv, r));
+  }
+  if (pts.length) lines.push([`Put each into ${ROW_NO[0]} or ${ROW_NO[1]} to get ${U}`, pts.map(p => `${U} = ${(u === 'y' ? p.y : p.x).html}`).join(' &ensp; ')]);
+  return { lines, pts, nonReal: z.nonReal };
+}
+function solveTwo(eqs, view) {
+  let out = null;
+  for (const u of ['y', 'x']) for (const i of [0, 1]) {
+    if (out || mpDeg(eqs[i].F, u) !== 1) continue;
+    const cs = coeffsIn(eqs[i].F, u), a = cs.get(1);
+    if (!mpIsConst(a)) continue;
+    out = bySubstitution(eqs, i, u, mpScale(cs.get(0) || mpZero(), opV('/', Q(-1n), mpConstOf(a))), view);
+  }
+  for (const u of ['y', 'x']) if (!out && eqs.every(e => mpDeg(e.F, u) <= 1) && eqs.some(e => mpDeg(e.F, u) === 1)) out = byElimination(eqs, u, view);
+  if (!out) throw new CalcError('This needs one equation with y (or x) only to the first power — like y = …, 2x + 3y = 6, or x = y² + 1.');
+  // a point that makes a cleared bottom 0 isn't really a solution
+  out.pts = (out.pts || []).filter(p => eqs.every(e => e.den.size <= 1 || Math.abs(mpEvalF(e.den, new Map([['x', p.x.f], ['y', p.y.f]]))) > 1e-9));
+  const seen = new Set();
+  out.pts = out.pts.filter(p => { const k = `${p.x.f.toFixed(9)},${p.y.f.toFixed(9)}`; if (seen.has(k)) return false; seen.add(k); return true; });
+  return { ...out, lines: [...eqs.map(e => [null, `<span class="rowtag">${ROW_NO[e.no - 1]}</span>${e.typed}`]), ...out.lines] };
+}
+function solveSystem(rows) {
+  const filled = rows.map((items, i) => ({ items, no: i + 1 })).filter(r => r.items.length);
+  if (!filled.length) return null;
+  const view = S.view;
+  const eqs = filled.map(r => eqOf(r.items, r.no, filled.length === 1));
+  return eqs.length === 1 ? solveOne(eqs[0], view) : solveTwo(eqs, view);
+}
+
 // ===== UI =====
 
 const $ = s => document.querySelector(s);
@@ -2486,6 +3235,10 @@ const S = {
   tally: 0,           // answers ever saved: the counter wheels above the display
   sel: null,          // graph mode: which pinned function is in the editor (null = the new one)
   draft: [],          // the new function, kept while a pinned one is being edited
+  page: 'main',       // 'main' | 'system' | 'simplify'
+  pageEd: {},         // each page's expression and cursor while another page is open
+  sysRows: [[], []],  // System solver: the two equations (the one being typed is also S.root)
+  sysRow: 0,
 };
 
 // ---------- editor ----------
@@ -2511,7 +3264,7 @@ function edited() { S.afterEval = false; S.committed = null; }
 const AUTO_EXIT_SLOTS = new Set(['den', 'exp', 'rad', 'arg', 'rep']);
 function exitSimpleBox(slots = AUTO_EXIT_SLOTS) {
   const p = S.cur.path.at(-1), arr = curArr();
-  if (p && slots.has(p.slot) && S.cur.i === arr.length && arr.length && arr.every(isDigitCh)) moveRight();
+  if (p && slots.has(p.slot) && S.cur.i === arr.length && arr.length && arr.every(it => isDigitCh(it) || ['x', 'y', 'v'].includes(it.t))) moveRight();
 }
 
 function typeChar(v, isOp) {
@@ -2662,7 +3415,7 @@ function insertTpl(kind) {
       }
     } else if (prev && prev.t === 'ans') j--;
     // 3, 0.5, 2π, √3, 3², sin(30°)
-    else while (isDigitCh(arr[j - 1]) || (arr[j - 1] && ['pi', 'x', 'root', 'pow', 'fn', 'rep'].includes(arr[j - 1].t))) j--;
+    else while (isDigitCh(arr[j - 1]) || (arr[j - 1] && ['pi', 'x', 'y', 'v', 'root', 'pow', 'fn', 'rep'].includes(arr[j - 1].t))) j--;
   } else {
     let k = j;
     while (isDigitCh(arr[k - 1])) k--;
@@ -2792,7 +3545,12 @@ function moveVert(dir) {
   return false;
 }
 // Up/down that has nowhere to go inside the expression moves between functions in graph mode.
-const upDown = dir => () => { S.afterEval = false; if (!moveVert(dir) && S.fx) moveRow(dir); };
+const upDown = dir => () => {
+  S.afterEval = false;
+  if (moveVert(dir)) return;
+  if (S.fx) moveRow(dir);
+  else if (S.page === 'system') setRow(dir > 0 ? 1 : 0);
+};
 
 function nav(fn) { return () => { S.afterEval = false; fn(); }; }
 
@@ -2826,6 +3584,7 @@ function closeParen() {
 }
 
 function clearAll() {
+  if (S.page === 'system' && !S.root.length) { clearRows(); return; } // Esc on an empty equation clears both
   if (S.fx && S.sel !== null) { deletePin(S.sel); return; } // Esc on a pinned function deletes it
   if (S.fx && !S.root.length) S.fx = false; // AC on an empty f(x) leaves graph mode
   S.root = [];
@@ -2835,6 +3594,8 @@ function clearAll() {
 }
 
 function equals() {
+  if (S.page === 'system') { if (S.sysRow === 0) setRow(1); else toast('Solved as you type: the answers are in the display and the Steps tab'); return; }
+  if (S.page === 'simplify') { toast('Simplified as you type: see the display and the Steps tab'); return; }
   if (S.fx) { pinFunction(); return; }
   if (!S.root.length || S.afterEval) return;
   const ansUsed = S.ans;
@@ -2865,10 +3626,74 @@ function equals() {
 function cycleView() { setView(VIEWS[(VIEWS.indexOf(S.view) + 1) % VIEWS.length]); toast(`Answer view: ${VIEW_NAMES[S.view]}`); }
 function setView(v) { S.view = v; save(); }
 
+// ---------- pages: the calculator, the System solver and Simplify / factor ----------
+const PAGES = { main: 'Calculator', system: 'System solver', simplify: 'Simplify / factor' };
+const PAGE_ACT = { main: 'pageMain', system: 'pageSystem', simplify: 'pageSimplify' };
+const syncRows = () => { if (S.page === 'system') S.sysRows[S.sysRow] = S.root; };
+function setPage(p) {
+  if (p === S.page) return;
+  if (S.fx) { selectRow(null); S.fx = false; }
+  syncRows();
+  S.pageEd[S.page] = { root: S.root, cur: S.cur };
+  S.page = p;
+  const ed = S.pageEd[p];
+  S.root = p === 'system' ? S.sysRows[S.sysRow] : ed ? ed.root : [];
+  S.cur = ed ? ed.cur : { path: [], i: S.root.length };
+  S.afterEval = false;
+  S.committed = null;
+  S.tab = 'steps';
+  save();
+  toast(PAGES[p]);
+}
+function setRow(r) {
+  syncRows();
+  S.sysRow = r;
+  S.root = S.sysRows[r];
+  S.cur = { path: [], i: S.root.length };
+  S.afterEval = false;
+}
+function clearRows() { S.sysRows = [[], []]; S.sysRow = 0; S.root = S.sysRows[0]; S.cur = { path: [], i: 0 }; }
+const pageKey = p => keyName((S.keys[PAGE_ACT[p]] || [])[0] || '');
+function typeY() {
+  if (S.page === 'main') { toast(`y is for the System solver (${pageKey('system')})`); return; }
+  startTyping(false);
+  curArr().splice(S.cur.i, 0, { t: 'y' });
+  S.cur.i++;
+  edited();
+}
+// = types an equals sign in the System solver; everywhere else it saves.
+const pressEquals = () => (S.page === 'system' ? typeEquals() : equals());
+// It always goes between the two sides, outside any box.
+function typeEquals() {
+  if (S.page !== 'system') { toast(`Equations go in the System solver (${pageKey('system')})`); return; }
+  if (S.root.some(isEqSign)) { toast('An equation has just one ='); return; }
+  if (S.cur.path.length) S.cur = { path: [], i: S.cur.path[0].idx + 1 };
+  S.root.splice(S.cur.i, 0, { t: 'c', v: '=' });
+  S.cur.i++;
+  edited();
+}
+// Simplify / factor: letters type themselves, and letters that spell a function become it, however slowly
+// they're typed (s i n → sin( )).
+const WORDS = [['arcsin', 'asin'], ['arccos', 'acos'], ['arctan', 'atan'], ['sqrt', 'root'], ['sin', 'sin'], ['cos', 'cos'], ['tan', 'tan'], ['csc', 'csc'], ['sec', 'sec'], ['cot', 'cot'], ['pi', 'pi']];
+function typeLetter(l) {
+  startTyping(false);
+  const arr = curArr();
+  arr.splice(S.cur.i, 0, { t: 'v', v: l });
+  S.cur.i++;
+  edited();
+  let word = '';
+  for (let j = S.cur.i - 1; j >= 0 && arr[j].t === 'v'; j--) word = arr[j].v + word;
+  const hit = WORDS.find(([w]) => word.endsWith(w));
+  if (!hit) return;
+  arr.splice(S.cur.i - hit[0].length, hit[0].length);
+  S.cur.i -= hit[0].length;
+  if (hit[1] === 'pi') typePi(); else if (hit[1] === 'root') insertTpl('root'); else insertFn(hit[1]);
+}
+
 // ---------- actions & keybinds ----------
 const ICON_FRAC = `<span class="fr"><span class="fr-n"><i class="box"></i></span><span class="fr-d"><i class="box"></i></span></span>`;
 const A = {};
-const GROUPS = ['Numbers', 'Operations', 'Powers & roots', 'Trigonometry', 'Algebra & graphs', 'Fractions', 'Calculate', 'Editing', 'Move cursor'];
+const GROUPS = ['Pages', 'Numbers', 'Operations', 'Powers & roots', 'Trigonometry', 'Algebra & graphs', 'Fractions', 'Calculate', 'Editing', 'Move cursor'];
 function action(id, name, group, run, label, cls = 'fn') { A[id] = { id, name, group, run, label: label ?? name, cls }; }
 
 for (let d = 0; d <= 9; d++) action('d' + d, `Digit ${d}`, 'Numbers', () => typeChar(String(d), false), String(d), 'num');
@@ -2887,7 +3712,7 @@ for (const [fn, name] of Object.entries(TRIG_NAMES)) action(fn, `${name} (${FN_L
 action('pi', 'Pi (π)', 'Trigonometry', typePi, 'π');
 action('angle', 'Degrees ⇄ radians', 'Trigonometry', toggleAngle, '');
 action('xvar', 'Variable x', 'Algebra & graphs', typeX, '<i class="xv">x</i>');
-action('equals', 'Equals: saves the answer', 'Calculate', equals, '=', 'eq');
+action('equals', 'Equals: saves the answer (types = in the System solver)', 'Calculate', pressEquals, '=', 'eq');
 action('repeat', 'Repeating digits (0.3̅)', 'Numbers', typeRepeat, '<span>0.<span class="rep">3</span></span>');
 action('graph', 'Graph mode: f(x) = …', 'Algebra & graphs', toggleGraph, '');
 action('clearGraphs', 'Erase all graphs', 'Algebra & graphs', clearGraphs, '');
@@ -2904,6 +3729,15 @@ action('left', 'Left', 'Move cursor', nav(moveLeft), '←');
 action('right', 'Right', 'Move cursor', nav(moveRight), '→');
 action('up', 'Up (top of a fraction; previous function when graphing)', 'Move cursor', upDown(-1), '↑');
 action('down', 'Down (bottom of a fraction; next function when graphing)', 'Move cursor', upDown(1), '↓');
+action('yvar', 'Variable y (System solver)', 'Algebra & graphs', typeY, '<i class="xv">y</i>');
+action('eqsign', 'Equals sign (System solver)', 'Algebra & graphs', typeEquals, '<span class="stack"><b>=</b><small>sign</small></span>');
+action('sysRow', 'Other equation (System solver)', 'Algebra & graphs', () => setRow(1 - S.sysRow), '');
+action('sysClear', 'Clear both equations (System solver)', 'Algebra & graphs', clearRows, '<span class="stack"><b>AC</b><small>both</small></span>', 'fn danger');
+action('pageMain', 'Go to the calculator', 'Pages', () => setPage('main'), 'Calculator');
+action('pageSystem', 'Go to the System solver', 'Pages', () => setPage('system'), 'System solver');
+action('pageSimplify', 'Go to Simplify / factor', 'Pages', () => setPage('simplify'), 'Simplify / factor');
+// Simplify / factor's letters: typed by the letter keys there, so they're not in the Keybinds list.
+for (const l of 'abcdefghijklmnopqrstuvwxyz') action('L_' + l, `Letter ${l}`, 'Letters', () => typeLetter(l), `<i class="xv">${l}</i>`);
 
 const DEFAULT_KEYS = {
   d0: ['0'], d1: ['1'], d2: ['2'], d3: ['3'], d4: ['4'], d5: ['5'], d6: ['6'], d7: ['7'], d8: ['8'], d9: ['9'],
@@ -2913,9 +3747,15 @@ const DEFAULT_KEYS = {
   asin: ['a s'], acos: ['a c'], atan: ['a t'], pi: ['p'], angle: ['d'], xvar: ['x'], graph: ['x g'], clearGraphs: ['p z'], mixed: ['m'], view: ['v'], eq: ['q'], equals: ['='], next: ['Enter'], ans: ['a'],
   back: ['Backspace'], del: ['Delete'], clear: ['Escape'],
   left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'],
+  yvar: ['y'], eqsign: [], sysRow: [], sysClear: [], pageMain: ['p p 1'], pageSystem: ['p p 2'], pageSimplify: ['p p 3'],
 };
+for (const l of 'abcdefghijklmnopqrstuvwxyz') DEFAULT_KEYS['L_' + l] = [];
 
-const SCI = ['sin', 'cos', 'tan', 'csc', 'sec', 'cot', 'pi', 'angle', 'asin', 'acos', 'atan', 'xvar', 'repeat', 'graph'];
+const SCI = {
+  main: ['sin', 'cos', 'tan', 'csc', 'sec', 'cot', 'pi', 'angle', 'asin', 'acos', 'atan', 'xvar', 'repeat', 'graph'],
+  system: ['xvar', 'yvar', 'eqsign', 'sysRow', 'pi', 'repeat', 'sysClear'],
+  simplify: ['sin', 'cos', 'tan', 'csc', 'sec', 'cot', 'pi', 'L_a', 'L_b', 'L_c', 'L_n', 'L_x', 'L_y', 'L_z'],
+};
 // NAV is a d-pad spanning three rows in the first column.
 const PAD = [
   ['view', 'pow', 'root', 'back', 'clear'],
@@ -2937,7 +3777,14 @@ const partName = k => KEY_NAMES[k] || (k.length === 1 ? k.toUpperCase() : k);
 const keyName = k => k.split(' ').map(partName).join(' ');
 const keyBadge = k => k.split(' ').map(p => KEY_BADGES[p] || partName(p)).join('');
 const normKey = e => (e.key === ' ' ? 'Space' : e.key.length === 1 ? e.key.toLowerCase() : e.key);
-const isPrefix = seq => Object.values(S.keys).some(ks => ks && ks.some(k => k.startsWith(seq + ' ')));
+// On Simplify / factor the letter keys type letters, so only page jumps and shortcuts that don't start with a letter apply.
+const isLetterKey = k => /^[a-z]$/.test(k);
+const liveBinding = (id, k) => S.page !== 'simplify' || A[id].group === 'Pages' || !isLetterKey(k.split(' ')[0]);
+function activeOwner(k) {
+  for (const id in S.keys) if (S.keys[id] && S.keys[id].includes(k) && liveBinding(id, k)) return id;
+  return S.page === 'simplify' && isLetterKey(k) ? 'L_' + k : null;
+}
+const isPrefix = seq => Object.entries(S.keys).some(([id, ks]) => ks && ks.some(k => k.startsWith(seq + ' ') && liveBinding(id, k)));
 
 function keyOwner(k) {
   for (const id in S.keys) if (S.keys[id] && S.keys[id].includes(k)) return id;
@@ -2986,7 +3833,7 @@ function validItems(arr) {
 }
 function save() {
   store.set({
-    keymapVersion: 10, pins: S.pins, fx: S.fx, view: S.view, angle: S.angle, hints: S.hints, autoExit: S.autoExit, tab: S.tab, keys: S.keys, ans: enV(S.ans),
+    keymapVersion: 10, page: S.page, pins: S.pins, fx: S.fx, view: S.view, angle: S.angle, hints: S.hints, autoExit: S.autoExit, tab: S.tab, keys: S.keys, ans: enV(S.ans),
     tally: S.tally, history: S.history.map(h => ({ items: h.items, v: enV(h.v), unit: h.unit, label: h.label })),
   });
 }
@@ -3034,6 +3881,9 @@ function load() {
   }
   // Saves from before the counter start it at what the history holds.
   S.tally = Number.isSafeInteger(s.tally) && s.tally >= 0 ? s.tally : S.history.length;
+  if (Object.hasOwn(PAGES, s.page)) S.page = s.page;
+  if (S.page !== 'main') S.fx = false;
+  if (S.page === 'system') S.root = S.sysRows[0];
 }
 
 // ---------- rendering ----------
@@ -3067,8 +3917,8 @@ function edArr(arr, path, isRoot, live) {
       s += `<span class="ch ans"${at(i)}>Ans</span>`;
     } else if (it.t === 'pi') {
       s += `<span class="ch"${at(i)}>π</span>`;
-    } else if (it.t === 'x') {
-      s += `<span class="ch xv"${at(i)}>x</span>`;
+    } else if (it.t === 'x' || it.t === 'y' || it.t === 'v') {
+      s += `<span class="ch xv"${at(i)}>${it.t === 'v' ? it.v : it.t}</span>`;
     } else if (it.t === 'fn') {
       const pwPath = [...path, { idx: i, slot: 'pw' }];
       const showPw = it.pw.length || (live && samePath(S.cur.path.slice(0, pwPath.length), pwPath));
@@ -3098,11 +3948,21 @@ function edArr(arr, path, isRoot, live) {
   return isRoot ? s : `<span class="slot">${s}</span>`;
 }
 
+const SYS_PH = ['y = 2x + 3, or 2x + 3y = 6…', 'y = x² − 1, or leave it empty'];
 function renderEditor() {
   ARR_REG = [];
-  exprEl.innerHTML = '<span class="expr-in">' + (S.fx ? `<span class="fxlabel">${S.sel === null ? 'f' : 'g' + (S.sel + 1)}(<i class="xv">x</i>) =</span>` : '') + (S.root.length
-    ? edArr(S.root, [], true, true)
-    : CUR + `<span class="ph">${S.fx ? 'type a function of x…' : 'Type a calculation…'}</span>`) + '</span>';
+  exprEl.classList.toggle('sys', S.page === 'system');
+  if (S.page === 'system') { // both equations; the one being typed is live
+    exprEl.innerHTML = S.sysRows.map((row, r) => {
+      const on = r === S.sysRow;
+      const body = row.length ? edArr(row, [], true, on) : (on ? CUR : '') + `<span class="ph">${SYS_PH[r]}</span>`;
+      return `<div class="sysrow${on ? ' on' : ''}" data-row="${r}"><span class="rowno">${r + 1}</span><span class="expr-in">${body}</span></div>`;
+    }).join('');
+  } else {
+    exprEl.innerHTML = '<span class="expr-in">' + (S.fx ? `<span class="fxlabel">${S.sel === null ? 'f' : 'g' + (S.sel + 1)}(<i class="xv">x</i>) =</span>` : '') + (S.root.length
+      ? edArr(S.root, [], true, true)
+      : CUR + `<span class="ph">${S.fx ? 'type a function of x…' : S.page === 'simplify' ? 'Type with letters: (a + b)², x² − y²…' : 'Type a calculation…'}</span>`) + '</span>';
+  }
   const c = exprEl.querySelector('.cur');
   if (c) {
     const er = exprEl.getBoundingClientRect(), cr = c.getBoundingClientRect();
@@ -3111,13 +3971,19 @@ function renderEditor() {
   }
 }
 
-const kbd = id => (S.keys[id] && S.keys[id][0] ? `<kbd>${keyName(S.keys[id][0])}</kbd>` : `the ${A[id].label} button`);
+// The first of an action's keys that works on this page.
+const liveKey = id => (S.keys[id] || []).find(k => liveBinding(id, k));
+const kbd = id => (liveKey(id) ? `<kbd>${keyName(liveKey(id))}</kbd>` : `the ${A[id].label} button`);
 
 function renderHint() {
   const p = S.cur.path.at(-1);
   let h = '';
   const on = `${kbd('next')} moves on`;
-  if (S.fx && S.sel !== null) h = `Editing g${S.sel + 1}(x) · ${kbd('eq')} saves · ${kbd('clear')} deletes it · ${kbd('up')} ${kbd('down')} switch`;
+  if (S.page === 'system' && !p) h = !S.root.length ? `Equation ${S.sysRow + 1} · ${kbd('xvar')} ${kbd('yvar')} ${kbd('equals')} type x, y and = · ${kbd('up')} ${kbd('down')} switch equations`
+    : `Equation ${S.sysRow + 1} · solved as you type · ${S.sysRow ? `${kbd('up')} back to equation 1` : `${kbd('next')} on to equation 2`}`;
+  else if (S.page === 'simplify' && !p) h = !S.root.length ? `Letters type themselves · spell sin, cos, tan, sqrt or pi · ${kbd('pow')} power · ${kbd('frac')} fraction`
+    : `Simplified and factored as you type · ${kbd('pow')} power · ${kbd('frac')} fraction`;
+  else if (S.fx && S.sel !== null) h = `Editing g${S.sel + 1}(x) · ${kbd('eq')} saves · ${kbd('clear')} deletes it · ${kbd('up')} ${kbd('down')} switch`;
   else if (S.fx && !S.root.length && S.pins.length) h = `Graph mode · ${kbd('up')} ${kbd('down')} pick a function · ${kbd('clear')} deletes it · ${kbd('clearGraphs')} erases all`;
   else if (S.fx && !S.root.length) h = `Graph mode · build f(x) with ${kbd('xvar')} · ${kbd('eq')} pins it to compare · ${kbd('graph')} or ${kbd('clear')} leaves`;
   else if (!S.root.length) h = `The answer shows as you type · ${kbd('eq')} saves it · ${kbd('next')} jumps to the next box`;
@@ -3144,15 +4010,15 @@ function seqHint() {
   const more = [];
   for (const id in S.keys) {
     for (const k of S.keys[id]) {
-      if (k.startsWith(seq.keys + ' ')) more.push(`<kbd>${escapeHTML(keyName(k.slice(seq.keys.length + 1)))}</kbd> ${A[id].name}`);
+      if (k.startsWith(seq.keys + ' ') && liveBinding(id, k)) more.push(`<kbd>${escapeHTML(keyName(k.slice(seq.keys.length + 1)))}</kbd> ${A[id].name}`);
     }
   }
-  const now = keyOwner(seq.keys);
+  const now = activeOwner(seq.keys);
   return `${now ? `${A[now].name} · ` : ''}keep typing for ${more.join(', ')}`;
 }
 
 function renderSeq() {
-  $('.display').classList.toggle('seq-wait', !!seq && !keyOwner(seq.keys));
+  $('.display').classList.toggle('seq-wait', !!seq && !activeOwner(seq.keys));
 }
 
 function currentSolve() {
@@ -3241,6 +4107,7 @@ function renderSteps(res) {
         <li>${kbd('next')} moves to the next box: ${kbd('sin')} ${kbd('pow')} 2 ${kbd('next')} 3 0 is sin²(30°), while ${kbd('sin')} 3 0 ${kbd('pow')} 2 is sin(30²).</li>
         <li>${kbd('xvar')} types <i class="xv">x</i>: (<i class="xv">x</i> + 1)<sup class="sup">2</sup> expands to <i class="xv">x</i><sup class="sup">2</sup> + 2<i class="xv">x</i> + 1, and that factors back. ${kbd('graph')} graphs a function.</li>
         <li>${kbd('view')} switches the answer between fraction, mixed number and decimal.</li>
+        <li>${kbd('pageSystem')} opens the <b>System solver</b> and ${kbd('pageSimplify')} <b>Simplify / factor</b>; ${kbd('pageMain')} comes back here.</li>
         <li>Change any key in the <b>Keybinds</b> tab.</li>
       </ul></div>`;
     return;
@@ -3271,6 +4138,106 @@ function renderSteps(res) {
   if (res.lines.length === 1 && !res.equation) h += `<p class="msg">That’s already as simple as it gets.</p>`;
   h += formsHTML(res.value, S.view) + systemHTML(res, S.view);
   el.innerHTML = h;
+}
+
+// ---------- rendering the System solver and Simplify / factor ----------
+function pageSolve(fn) {
+  E = { view: S.view, ans: S.ans, angle: S.angle };
+  try { return fn(); } catch (e) {
+    if (e instanceof CalcError) return { error: e.message };
+    console.error(e);
+    return { error: 'That’s too big to work out.' };
+  }
+}
+// Working with = between the lines (Simplify) or without (System solver, whose lines aren't all equal).
+function stepList(lines, sign) {
+  return '<ol class="steps">' + lines.map(([why, eq], i) => (why ? `<li class="why"><span>${why}</span></li>` : '')
+    + `<li class="line${sign && i === lines.length - 1 && i ? ' final' : ''}"><span class="eqs">${sign && i ? '=' : ''}</span><span class="sx">${eq}</span></li>`).join('') + '</ol>';
+}
+const plainQ = z => z.v && isQ(z.v) && (z.v.d === 1n || S.view !== 'dec');
+const lcdNum = z => (z.v ? z.html : `≈ ${fmtFloat(z.f, 6)}`);
+const approxNote = z => (z.v && isQ(z.v) ? '' : `<span class="approx">≈ ${fmtFloat(z.f, 8)}</span>`);
+function renderSysResult(r) {
+  resultEl.className = 'result preview multi';
+  altEl.innerHTML = '';
+  resultEl.innerHTML = '';
+  if (!r || r.error) return;
+  const extra = r.nonReal ? `+ ${r.nonReal} complex` : '';
+  if (r.one) {
+    const V = `<i class="xv">${r.one}</i>`;
+    resultEl.innerHTML = `<span>${r.roots.length ? `${V} = ${r.roots.map(lcdNum).join('<span class="op">or</span>')}` : 'no real solution'}</span>`;
+    const dec = r.roots.filter(z => !plainQ(z)).map(z => fmtFloat(z.f, 6));
+    altEl.innerHTML = [dec.length ? `${V} ≈ ${dec.join(', ')}` : '', extra].filter(Boolean).join(' · ');
+    return;
+  }
+  if (!r.pts.length) { resultEl.innerHTML = `<span>${r.verdict ? r.verdict.split(/[:,]/)[0] : 'no real solution'}</span>`; altEl.innerHTML = extra; return; }
+  const exact = r.pts.every(p => p.x.v && p.y.v);
+  resultEl.innerHTML = `<span>${r.pts.map(p => exact ? `(${p.x.html}, ${p.y.html})` : `≈ (${fmtFloat(p.x.f, 5)}, ${fmtFloat(p.y.f, 5)})`).join('<span class="op">·</span>')}</span>`;
+  const dec = exact && r.pts.some(p => !plainQ(p.x) || !plainQ(p.y)) ? r.pts.map(p => `(${fmtFloat(p.x.f, 5)}, ${fmtFloat(p.y.f, 5)})`).join(' ') : '';
+  altEl.innerHTML = [`${r.pts.length} solution${r.pts.length > 1 ? 's' : ''}`, dec && `≈ ${dec}`, extra].filter(Boolean).join(' · ');
+}
+function renderSysSteps(r) {
+  const el = $('#panel-steps');
+  if (!r) {
+    el.innerHTML = `<div class="empty-state">
+      Type two equations and get every point where they meet, exactly, with the working. Try:
+      <div class="ex">${YV} = ${XV}<sup class="sup">2</sup> − 1 &ensp;and&ensp; ${YV} = ${XV} + 1</div>
+      <ul>
+        <li>Any form: ${YV} = 2${XV} + 3, 2${XV} + 3${YV} = 6, ${XV} = 4, or just 2${XV} + 3 (that means ${YV} = 2${XV} + 3).</li>
+        <li>Lines, parabolas, cubics, any polynomial. Answers stay exact: square roots, nested roots, and the cubic formula when nothing simpler works.</li>
+        <li>Fill in only one, like ${XV}<sup class="sup">3</sup> − 6${XV}<sup class="sup">2</sup> + 11${XV} − 6 = 0, to find its roots.</li>
+        <li>${kbd('xvar')} and ${kbd('yvar')} type the letters, ${kbd('equals')} types =, and ${kbd('next')} or ${kbd('down')} moves to the second equation.</li>
+        <li>${kbd('pageMain')} goes back to the calculator · ${kbd('pageSimplify')} opens Simplify / factor.</li>
+      </ul></div>`;
+    return;
+  }
+  if (r.error) { el.innerHTML = '<p class="msg"></p>'; el.querySelector('.msg').textContent = `Keep going… (${r.error})`; return; }
+  let h = stepList(r.lines, false) + '<section class="extra"><h4>Answer</h4>';
+  if (r.one) {
+    const V = `<i class="xv">${r.one}</i>`;
+    h += r.roots.map((z, i) => formRow(`${V}<sub>${i + 1}</sub>`, z.html + approxNote(z) + (z.m > 1 ? ' <span class="approx">(repeated)</span>' : ''))).join('') || '<p class="sys-ans">No real solution.</p>';
+  } else if (r.pts.length) {
+    h += r.pts.map((p, i) => formRow(`Solution ${i + 1}`, `(${p.x.html}, ${p.y.html})` + (plainQ(p.x) && plainQ(p.y) ? '' : `<span class="approx">≈ (${fmtFloat(p.x.f, 6)}, ${fmtFloat(p.y.f, 6)})</span>`))).join('');
+  } else h += `<p class="sys-ans">${r.verdict || 'No real solution: they don’t meet.'}</p>`;
+  if (r.nonReal) h += `<p class="msg">Plus ${r.nonReal} complex solution${r.nonReal > 1 ? 's' : ''}, which aren’t points on the graph.</p>`;
+  el.innerHTML = h + '</section>';
+}
+function renderSimpResult(r) {
+  resultEl.className = 'result preview';
+  altEl.innerHTML = '';
+  resultEl.innerHTML = '';
+  if (!r || r.error) return;
+  resultEl.innerHTML = `<span class="eqsign">=</span><span>${r.simp}</span>`;
+  altEl.innerHTML = r.fact ? `<span class="altnote">factored: <b>${r.fact}</b></span>` : rxIsConst(r.value) ? '' : '<span class="altnote">doesn’t factor any further</span>';
+}
+function renderSimpSteps(r) {
+  const el = $('#panel-steps');
+  if (!r) {
+    el.innerHTML = `<div class="empty-state">
+      Type an expression with letters and it’s simplified and factored as you type. Try:
+      <div class="ex">(<i class="xv">a</i> + <i class="xv">b</i>)<sup class="sup">2</sup> − (<i class="xv">a</i> − <i class="xv">b</i>)<sup class="sup">2</sup></div>
+      <ul>
+        <li>Every letter key types its letter: <i class="xv">a</i>, <i class="xv">b</i>, <i class="xv">x</i>, <i class="xv">y</i>…</li>
+        <li>Spell a function to get it, as slowly as you like: s i n is sin( ). Also cos, tan, csc, sec, cot, arcsin, arccos, arctan, sqrt for ${rootHTML('&nbsp;')} and pi for π.</li>
+        <li>${kbd('pow')} for powers, ${kbd('frac')} for a fraction, ${kbd('next')} to step out of a box.</li>
+        <li>Fractions cancel: ${fr(`${XV}<sup class="sup">2</sup> − 1`, `${XV} − 1`)} = ${XV} + 1. And sin² + cos² = 1.</li>
+        <li>${kbd('pageMain')} goes back to the calculator · ${kbd('pageSystem')} opens the System solver.</li>
+      </ul></div>`;
+    return;
+  }
+  if (r.error) { el.innerHTML = '<p class="msg"></p>'; el.querySelector('.msg').textContent = `Keep going… (${r.error})`; return; }
+  let h = stepList(r.lines, true);
+  if (r.lines.length === 1) h += '<p class="msg">That’s already as simple as it gets.</p>';
+  h += '<section class="extra"><h4>Results</h4>' + formRow('Simplified', r.simp)
+    + (r.gcf && r.gcf !== r.fact ? formRow('Common factor out', r.gcf) : '')
+    + formRow('Factored', r.fact || (rxIsConst(r.value) ? r.simp : 'Doesn’t factor any further'), r.fact || rxIsConst(r.value) ? '' : ' none') + '</section>';
+  el.innerHTML = h;
+}
+function renderPages() {
+  for (const b of document.querySelectorAll('[data-page]')) {
+    b.setAttribute('aria-pressed', b.dataset.page === S.page);
+    b.querySelector('.pk').textContent = keyBadge((S.keys[PAGE_ACT[b.dataset.page]] || [])[0] || '');
+  }
 }
 
 function renderHistory() {
@@ -3311,12 +4278,12 @@ function escapeHTML(s) { return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<':
 
 function renderPad() {
   const btn = (id, extra = '') => {
-    const a = A[id], k = S.keys[id][0];
+    const a = A[id], k = liveKey(id) || (id.startsWith('L_') ? id.slice(2) : '');
     if (id === 'graph') extra += S.fx ? ' on' : '';
-    const label = id === 'graph' ? `<span class="stack"><b>f(<i class="xv">x</i>)</b><small>${S.fx ? 'graphing' : 'graph'}</small></span>` : id === 'angle' ? `<span class="stack"><b>${S.angle === 'deg' ? 'DEG' : 'RAD'}</b><small>⇄ ${S.angle === 'deg' ? 'rad' : 'deg'}</small></span>` : a.label;
+    const label = id === 'sysRow' ? `<span class="stack"><b>⇅</b><small>eq ${2 - S.sysRow}</small></span>` : id === 'graph' ? `<span class="stack"><b>f(<i class="xv">x</i>)</b><small>${S.fx ? 'graphing' : 'graph'}</small></span>` : id === 'angle' ? `<span class="stack"><b>${S.angle === 'deg' ? 'DEG' : 'RAD'}</b><small>⇄ ${S.angle === 'deg' ? 'rad' : 'deg'}</small></span>` : a.label;
     return `<button type="button" class="k ${a.cls} ${extra}" data-act="${id}" aria-label="${a.name}">${label}${k ? `<span class="kb">${escapeHTML(keyBadge(k))}</span>` : ''}</button>`;
   };
-  $('#sci').innerHTML = SCI.map(id => btn(id)).join('');
+  $('#sci').innerHTML = SCI[S.page].map(id => btn(id)).join('');
   padEl.innerHTML = PAD.flat().map(id => (id === 'NAV'
     ? `<div class="navpad">${['up', 'left', 'right', 'down'].map(n => btn(n)).join('')}</div>`
     : btn(id))).join('');
@@ -3344,16 +4311,29 @@ function renderTally() {
 }
 
 function render() {
+  syncRows();
   document.body.classList.toggle('nohints', !S.hints);
+  renderPages();
   renderTally();
   for (const b of document.querySelectorAll('[data-view]')) b.setAttribute('aria-pressed', b.dataset.view === S.view);
   for (const b of document.querySelectorAll('[data-angle]')) b.setAttribute('aria-pressed', b.dataset.angle === S.angle);
   ansLineEl.innerHTML = S.ans ? `<span class="ans">Ans</span> ${eqSign(S.ans, S.view)} ${valueHTML(S.ans, S.view)}` : '';
   renderEditor();
   renderHint();
-  const res = currentSolve();
-  renderResult(res);
-  renderSteps(res);
+  let res = null;
+  if (S.page === 'main') {
+    res = currentSolve();
+    renderResult(res);
+    renderSteps(res);
+  } else if (S.page === 'system') {
+    const r = pageSolve(() => solveSystem(S.sysRows));
+    renderSysResult(r);
+    renderSysSteps(r);
+  } else {
+    const r = pageSolve(() => (S.root.length ? simplifyLetters(S.root) : null));
+    renderSimpResult(r);
+    renderSimpSteps(r);
+  }
   renderHistory();
   renderKeys();
   renderPad();
@@ -3395,6 +4375,7 @@ function evalF(n, x) {
   switch (n.k) {
     case 'num': return toF(n.v);
     case 'x': return x;
+    case 'y': case 'v': return NaN;
     case 'pi': return Math.PI;
     case 'ans': return !S.ans ? NaN : isAlg(S.ans) ? evalAlg(S.ans, x) : toF(S.ans);
     case 'neg': return -evalF(n.a, x);
@@ -3418,7 +4399,7 @@ function evalF(n, x) {
 const hasTrig = arr => arr.some(it => it.t === 'fn' || (isTpl(it) && SLOTS[it.t].some(sl => hasTrig(it[sl]))));
 function graphSources() {
   const out = [];
-  const newRow = S.sel === null ? S.root : S.draft;
+  const newRow = S.page !== 'main' ? [] : S.sel === null ? S.root : S.draft;
   if (hasX(newRow) || (S.fx && newRow.length)) out.push({ items: newRow, current: S.sel === null, color: GRAPH_COLORS[0] }); // f(x) = 6 is a flat line
   S.pins.forEach((p, i) => out.push(i === S.sel
     ? { items: S.root, pin: i, current: true, color: GRAPH_COLORS[i + 1] }
@@ -3771,18 +4752,19 @@ function startSeq(keys, snap) {
 
 function pressKeys(k) {
   if (seq) {
-    const cand = seq.keys + ' ' + k, id = keyOwner(cand);
+    const cand = seq.keys + ' ' + k, id = activeOwner(cand);
     if (id || isPrefix(cand)) {
-      const snap = seq.snap;
+      const snap = seq.snap, own = activeOwner(k);
       if (id) { Object.assign(S, structuredClone(snap)); A[id].run(); save(); }
+      else if (own) A[own].run(); // p p: the second p still types until a 2 makes it a page jump
       if (isPrefix(cand)) startSeq(cand, snap); else endSeq();
-      return id || 'pending';
+      return id || own || 'pending';
     }
     endSeq();
     // A quick Enter only confirms the first key (c ⏎ s → cos(sin …), not csc) and stays put.
-    if (keyOwner(k) === 'next') return 'next';
+    if (activeOwner(k) === 'next') return 'next';
   }
-  const id = keyOwner(k), prefix = isPrefix(k);
+  const id = activeOwner(k), prefix = isPrefix(k);
   if (!id && !prefix) return null;
   const snap = prefix ? snapshot() : null;
   if (id) A[id].run();
@@ -3874,6 +4856,8 @@ $('#panel-graph').addEventListener('click', e => {
 new ResizeObserver(() => drawGraph()).observe(graphCv);
 
 exprEl.addEventListener('click', e => {
+  const row = e.target.closest('.sysrow');
+  if (row && +row.dataset.row !== S.sysRow) { setRow(+row.dataset.row); render(); return; }
   const el = e.target.closest('[data-a]');
   if (!el) {
     S.cur = { path: [], i: S.root.length };
@@ -3890,9 +4874,13 @@ exprEl.addEventListener('click', e => {
   render();
 });
 
-document.querySelector('.seg').addEventListener('click', e => {
+$('.calc-head').addEventListener('click', e => {
   const b = e.target.closest('[data-view]');
   if (b) { setView(b.dataset.view); render(); }
+});
+$('.pages').addEventListener('click', e => {
+  const b = e.target.closest('[data-page]');
+  if (b) { setPage(b.dataset.page); render(); }
 });
 
 document.querySelector('.tabs').addEventListener('click', e => {
