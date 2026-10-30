@@ -266,6 +266,7 @@ kbd {
 .ghost { opacity: .3; }
 .fnn { margin-right: .04em; }
 .sup { display: inline-block; font-size: .62em; vertical-align: .8em; line-height: 1; margin-left: .04em; }
+.sub { display: inline-block; font-size: .62em; vertical-align: -.45em; line-height: 1; margin: 0 .06em 0 .02em; }
 .rt { display: inline-flex; align-items: stretch; vertical-align: middle; margin: 0 .06em; line-height: 1.15; }
 .rt-idx { font-size: .55em; align-self: flex-start; margin: .1em -.5em 0 0; min-width: .7em; text-align: right; position: relative; z-index: 1; }
 .rt-svg { width: .6em; flex: none; overflow: visible; }
@@ -421,7 +422,7 @@ kbd {
 }
 .t-paren { background: var(--tag-paren); color: var(--tag-paren-ink); }
 .t-pow { background: var(--tag-pow); color: var(--tag-pow-ink); }
-.t-trig { background: var(--tag-trig); color: var(--tag-trig-ink); }
+.t-trig, .t-log { background: var(--tag-trig); color: var(--tag-trig-ink); }
 .t-md { background: var(--tag-md); color: var(--tag-md-ink); }
 .t-as { background: var(--tag-as); color: var(--tag-as-ink); }
 .t-frac { background: var(--tag-frac); color: var(--tag-frac-ink); }
@@ -484,6 +485,17 @@ kbd {
 .textbtn:hover { color: var(--accent); }
 .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
 .panel-head p { margin: 0; color: var(--muted); font-size: 14px; }
+
+/* ---------- trig formulas ---------- */
+.id-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 7px 0; border-top: 1px dashed var(--line); }
+.kb-group h3 + .id-row { border-top: 0; }
+.id-eq { font: 400 16px/1.5 var(--font-num); letter-spacing: -.02em; overflow-x: auto; white-space: nowrap; min-width: 0; }
+.id-eq small { font: 500 10px/1 var(--font-num); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.id-row .textbtn { flex: none; font-size: 13px; }
+.tv { border-collapse: collapse; font: 400 15px/1.4 var(--font-num); }
+.tv th, .tv td { padding: 6px 12px 6px 0; text-align: left; vertical-align: middle; }
+.tv th { font: 500 11px/1 var(--font-num); letter-spacing: .06em; color: var(--muted); }
+.tv tr + tr { border-top: 1px dashed var(--line); }
 
 /* ---------- keybinds ---------- */
 .kb-group h3 { font: 500 11px/1 var(--font-num); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 28px 0 8px; }
@@ -606,6 +618,7 @@ kbd {
       <button class="tab" role="tab" data-tab="steps">Steps</button>
       <button class="tab" role="tab" data-tab="history">History</button>
       <button class="tab" role="tab" data-tab="graph">Graph</button>
+      <button class="tab" role="tab" data-tab="trig">Trig</button>
       <button class="tab" role="tab" data-tab="keys">Keybinds</button>
     </div>
     <div class="panel" id="panel-steps" role="tabpanel"></div>
@@ -626,6 +639,7 @@ kbd {
       <div class="graph-pts" id="graphPts"></div>
       <p class="msg" id="graphHelp"></p>
     </div>
+    <div class="panel" id="panel-trig" role="tabpanel"></div>
     <div class="panel" id="panel-keys" role="tabpanel"></div>
   </aside>
 </div>
@@ -669,8 +683,11 @@ const isQ = v => typeof v.n === 'bigint';
 const isSurd = v => v.r !== undefined;
 const isPi = v => v.pp !== undefined;
 const isApprox = v => v.f !== undefined;
+// An imaginary number is { re, im }: two real values (exact or decimal), im never 0.
+const isCx = v => v.im !== undefined;
 const coefOf = v => (isQ(v) ? v : isSurd(v) ? v.c : null);
 const signV = v => {
+  if (isCx(v)) return NaN; // not positive or negative (and never 0)
   if (isAlg(v)) return algSign(v);
   if (isRad(v)) { const h = hp(v); return (h > 0n) - (h < 0n); }
   if (isPi(v)) return Math.sign(toF(v)); // never 0: π isn't the root of any such sum
@@ -679,7 +696,7 @@ const signV = v => {
 };
 const isZero = v => signV(v) === 0;
 const negQ = q => ({ n: -q.n, d: q.d });
-const negV = v => (isAlg(v) ? algNeg(v) : isQ(v) ? negQ(v) : isSurd(v) ? { ...v, c: negQ(v.c) } : isPi(v) ? { pp: v.pp.map(m => ({ k: m.k, c: negV(m.c) })) }
+const negV = v => (isCx(v) ? { re: negV(v.re), im: negV(v.im) } : isAlg(v) ? algNeg(v) : isQ(v) ? negQ(v) : isSurd(v) ? { ...v, c: negQ(v.c) } : isPi(v) ? { pp: v.pp.map(m => ({ k: m.k, c: negV(m.c) })) }
   : isRad(v) ? { t: v.t.map(m => ({ c: negQ(m.c), r: m.r })) } : { f: -v.f });
 const mkPi = c => (c.n === 0n ? Q(0n) : { pp: [{ k: 1, c }] });
 // The q in q·π, if the value is just that (π/6, 2π), else null.
@@ -693,7 +710,7 @@ function qF(q) {
   const s = 10n ** BigInt(shift);
   return Number(q.n / s) / Number(q.d / s);
 }
-const toF = v => (isAlg(v) ? NaN : isApprox(v) ? v.f : isSurd(v) ? qF(v.c) * Math.pow(Number(v.r), 1 / Number(v.k)) : isPi(v) ? v.pp.reduce((s, m) => s + toF(m.c) * Math.PI ** m.k, 0)
+const toF = v => (isCx(v) || isAlg(v) ? NaN : isApprox(v) ? v.f : isSurd(v) ? qF(v.c) * Math.pow(Number(v.r), 1 / Number(v.k)) : isPi(v) ? v.pp.reduce((s, m) => s + toF(m.c) * Math.PI ** m.k, 0)
   : isRad(v) ? v.t.reduce((s, m) => s + qF(m.c) * (m.r === 1n ? 1 : Math.sqrt(typeof m.r === 'bigint' ? Number(m.r) : toF(m.r))), 0)
   : qF(v));
 function approx(f) {
@@ -759,6 +776,10 @@ const recipSurd = A => ({ c: Q(A.c.d, A.c.n * A.r), r: A.r ** (A.k - 1n), k: A.k
 
 const FOP = { '+': (x, y) => x + y, '-': (x, y) => x - y, '*': (x, y) => x * y, '/': (x, y) => x / y };
 function opV(op, a, b) {
+  if (isCx(a) || isCx(b)) {
+    if (isAlg(a) || isAlg(b)) throw new CalcError('Imaginary numbers can’t be mixed with x.');
+    return cxOp(op, a, b);
+  }
   if (isAlg(a) || isAlg(b)) return algOp(op, a, b);
   if (op === '/' && isZero(b)) throw new CalcError(DIV0);
   if (isQ(a) && isQ(b)) return ARITH[op](a, b);
@@ -775,6 +796,7 @@ function opV(op, a, b) {
       return mkSurd(ARITH[op](A.c, B.c), A.r, A.k); // like terms: 2√3 + √3 = 3√3
     }
   }
+  if ((op === '*' || op === '/') && eTag(a) && eTag(b)) return ePow(ARITH[op === '*' ? '+' : '-'](eTag(a), eTag(b))); // e · e = e²
   if (radable(a) && radable(b)) { // 1 + √2, (√6 − √2)/4, 1 ÷ (1 + √2) = √2 − 1
     if (op === '+') return radAdd(a, b);
     if (op === '-') return radAdd(a, negV(b));
@@ -783,6 +805,105 @@ function opV(op, a, b) {
     if (r) return r;
   }
   return approx(FOP[op](toF(a), toF(b)));
+}
+
+// ---- imaginary numbers ----
+const cx = (re, im) => (isZero(im) || (isApprox(im) && Math.abs(im.f) < 1e-12 * Math.max(1, Math.abs(toF(re)))) ? re : { re, im });
+const reOf = v => (isCx(v) ? v.re : v);
+const imOf = v => (isCx(v) ? v.im : Q(0n));
+const I_UNIT = { re: Q(0n), im: Q(1n) };
+const cxF = (re, im) => cx(Math.abs(re) < 1e-12 * Math.max(1, Math.abs(im)) ? Q(0n) : approx(re), approx(im));
+function cxOp(op, a, b) {
+  const ar = reOf(a), ai = imOf(a), br = reOf(b), bi = imOf(b);
+  if (op === '+' || op === '-') return cx(opV(op, ar, br), opV(op, ai, bi));
+  if (op === '*') return cx(opV('-', opV('*', ar, br), opV('*', ai, bi)), opV('+', opV('*', ar, bi), opV('*', ai, br)));
+  // (a + bi) ÷ (c + di) = (a + bi)(c − di) ÷ (c² + d²)
+  const den = opV('+', opV('*', br, br), opV('*', bi, bi));
+  if (isZero(den)) throw new CalcError(DIV0);
+  return cx(opV('/', opV('+', opV('*', ar, br), opV('*', ai, bi)), den), opV('/', opV('-', opV('*', ai, br), opV('*', ar, bi)), den));
+}
+function cxPow(a, b) {
+  if (!isCx(b) && isQ(b) && b.d === 1n && abs(b.n) <= 4096n) { // whole powers: square and multiply, exactly
+    let r = Q(1n), base = a;
+    for (let e = abs(b.n); e; e >>= 1n) { if (e & 1n) r = opV('*', r, base); if (e > 1n) base = opV('*', base, base); }
+    return b.n < 0n ? opV('/', Q(1n), r) : r;
+  }
+  if (eTag(a)) { // e^(x + iy) = eˣ(cos y + i sin y): exact when y is a multiple of π, like e^(iπ) = −1
+    const z = opV('*', a.ek || Q(0n), b), y = imOf(z), q = piMultiple(y);
+    const mag = isZero(reOf(z)) ? Q(1n) : isQ(reOf(z)) ? ePow(reOf(z)) : approx(Math.exp(toF(reOf(z))));
+    if (q || isZero(y)) {
+      const dq = q ? Q(q.n * 180n, q.d) : Q(0n), c = trigExactDeg('cos', dq), s = trigExactDeg('sin', dq);
+      if (c && s) return cx(opV('*', mag, c), opV('*', mag, s));
+    }
+    return cxF(toF(mag) * Math.cos(toF(y)), toF(mag) * Math.sin(toF(y)));
+  }
+  // anything else: through the polar form, as decimals
+  const ar = toF(reOf(a)), ai = toF(imOf(a)), br = toF(reOf(b)), bi = toF(imOf(b));
+  if (ar === 0 && ai === 0) return Q(0n);
+  const lr = Math.log(Math.hypot(ar, ai)), th = Math.atan2(ai, ar);
+  const m = Math.exp(br * lr - bi * th), ang = bi * lr + br * th;
+  return cxF(m * Math.cos(ang), m * Math.sin(ang));
+}
+// re ± im·i: 3 + 4i, −i, i√2, (1 + √2)i, 3i/4
+function cxHTML(v, view, sig) {
+  const im = v.im, neg = signV(im) < 0, a = neg ? negV(im) : im, I = '<i class="xv">i</i>';
+  const num = n => (n === 1n ? '' : groupInt(String(n)));
+  let ih;
+  if (isQ(a) && (view !== 'dec' || a.d === 1n)) ih = a.d === 1n ? num(a.n) + I : fr(num(a.n) + I, groupInt(String(a.d)));
+  else if (isSurd(a) && exactIn(a, view)) ih = (a.c.d === 1n ? num(a.c.n) + I + rootHTML(groupInt(String(a.r)), a.k === 2n ? null : String(a.k)) : fr(num(a.c.n) + I + rootHTML(groupInt(String(a.r)), a.k === 2n ? null : String(a.k)), groupInt(String(a.c.d))));
+  else { const h = valueHTML(a, view, sig); ih = (radIsSum(a) || piIsSum(a) || isRad(a) ? `(${h})` : h) + I; }
+  if (isZero(v.re)) return (neg ? MINUS : '') + ih;
+  return `${valueHTML(v.re, view)}<span class="op">${neg ? MINUS : '+'}</span>${ih}`;
+}
+
+// ---- e = 2.71828…: a decimal that remembers it's e^k, so ln(e²) = 2 and e^(iπ) = −1 come out exact ----
+const E_CONST = { f: Math.E, ek: Q(1n) };
+const ePow = k => (k.n === 0n ? Q(1n) : { f: Math.exp(qF(k)), ek: k });
+const eTag = v => (isApprox(v) && v.ek ? v.ek : isQ(v) && v.n === 1n && v.d === 1n ? Q(0n) : null);
+const eHTML = v => '<i class="xv">e</i>' + (v.ek.n === 1n && v.ek.d === 1n ? '' : `<sup class="sup">${qText(v.ek)}</sup>`);
+
+// ---- logarithms: exact when the answer is a fraction (log 1000 = 3, log₂ ⅛ = −3, log₈ 2 = ⅓, ln e² = 2) ----
+const LOGS = new Set(['ln', 'log']);
+// p/q with x^q = b^p, small q, checked exactly.
+function exactLog(x, b) {
+  const tb = eTag(b);
+  if (tb && tb.n !== 0n) { const tx = eTag(x); return tx ? ARITH['/'](tx, tb) : null; }
+  if (isSurd(x)) { const r = exactLog(powV(x, Q(x.k)), b); return r && ARITH['/'](r, Q(x.k)); } // log √10 = ½
+  if (isSurd(b)) { const r = exactLog(x, powV(b, Q(b.k))); return r && ARITH['*'](r, Q(b.k)); }
+  if (!isQ(x) || !isQ(b)) return null;
+  const r = Math.log(qF(x)) / Math.log(qF(b));
+  if (!Number.isFinite(r)) return null;
+  let h0 = 0, h1 = 1, k0 = 1, k1 = 0, y = r;
+  for (let i = 0; i < 12; i++) {
+    const t = Math.floor(y);
+    [h0, h1] = [h1, t * h1 + h0];
+    [k0, k1] = [k1, t * k1 + k0];
+    if (k1 > 64 || Math.abs(h1) > 4096) return null;
+    if (Math.abs(h1 / k1 - r) < 1e-9) {
+      const p = BigInt(h1), q = BigInt(k1);
+      if ((bitLen(x.n) + bitLen(x.d)) * k1 > 20000 || (bitLen(b.n) + bitLen(b.d)) * Math.abs(h1) > 20000) return null;
+      const L = powQ(x, q), R = powQ(b, p);
+      return L.n === R.n && L.d === R.d ? Q(p, q) : null;
+    }
+    if (y === t) return null;
+    y = 1 / (y - t);
+  }
+  return null;
+}
+function logV(name, x, base) {
+  if (isAlg(x) || (base && isAlg(base))) throw new NotPolyError(NOT_POLY);
+  const b = name === 'ln' ? E_CONST : base || Q(10n);
+  if (isCx(b) || signV(b) <= 0 || (isQ(b) && b.n === b.d)) throw new CalcError('A log’s base must be a positive number other than 1.');
+  if (isCx(x)) { // ln z = ln|z| + i·(angle of z)
+    const xr = toF(x.re), xi = toF(x.im), lb = Math.log(toF(b));
+    return cxF(Math.log(Math.hypot(xr, xi)) / lb, Math.atan2(xi, xr) / lb);
+  }
+  if (isZero(x)) throw new CalcError(`${name === 'ln' ? 'ln' : 'log'} of 0 isn’t defined (it heads off to −∞).`);
+  if (signV(x) < 0) { // ln(−x) = ln x + iπ
+    const lb = eTag(b) ? Q(1n) : approx(Math.log(toF(b)));
+    return cx(logV(name, negV(x), base), opV('/', mkPi(Q(1n)), lb));
+  }
+  return exactLog(x, b) || approx(Math.log(toF(x)) / Math.log(toF(b)));
 }
 
 // ---- exact π: sums of c·π^k ----
@@ -816,11 +937,14 @@ function powQ(q, p) {
 }
 function powV(a, b) {
   if (isAlg(a) || isAlg(b)) return algPow(a, b);
+  if (isCx(a) || isCx(b)) return cxPow(a, b);
+  if (isApprox(a) && a.ek && isQ(b)) return ePow(ARITH['*'](a.ek, b)); // (e²)³ = e⁶
   if (isZero(a) && isZero(b)) throw new CalcError('0 to the power 0 isn’t defined.');
   if (isQ(b) && !isApprox(a) && !isPi(a) && !isRad(a)) {
     const p = b.n, k = b.d, A = parts(a);
     const small = abs(p) <= 10000n && (bitLen(A.c.n) + bitLen(A.c.d) + bitLen(A.r)) * Number(abs(p)) <= 100000;
     if (small && isQ(a)) {
+      if (a.n < 0n && k % 2n === 0n) return powV(rootV(a, Q(k)), Q(p)); // (−4)^(3/2) = (2i)³
       const r = powQ(a, p);
       return k === 1n ? r : rootQ(r, k);
     }
@@ -844,7 +968,7 @@ function powV(a, b) {
   const x = toF(a), y = toF(b);
   if (x < 0 && !Number.isInteger(y)) {
     if (isQ(b) && b.d % 2n === 1n) return approx((b.n % 2n === 0n ? 1 : -1) * Math.pow(-x, y));
-    throw new CalcError('A negative number to that power isn’t a real number.');
+    return cxF(Math.pow(-x, y) * Math.cos(Math.PI * y), Math.pow(-x, y) * Math.sin(Math.PI * y)); // principal value
   }
   return approx(Math.pow(x, y));
 }
@@ -852,6 +976,13 @@ function rootV(a, kv) {
   if (isAlg(a) || isAlg(kv)) throw new NotPolyError(NOT_POLY);
   if (!isQ(kv) || kv.d !== 1n || kv.n < 1n) throw new CalcError('The small number on a root must be a whole number, like 3 for a cube root.');
   const k = kv.n;
+  if (isApprox(a) && a.ek) return ePow(ARITH['/'](a.ek, kv));
+  if (isCx(a)) return cxPow(a, Q(1n, k));
+  if (k % 2n === 0n && signV(a) < 0) { // √(−4) = 2i
+    if (k === 2n) return cx(Q(0n), rootV(negV(a), kv));
+    const m = Math.pow(-toF(a), 1 / Number(k));
+    return cxF(m * Math.cos(Math.PI / Number(k)), m * Math.sin(Math.PI / Number(k)));
+  }
   if (isQ(a)) return rootQ(a, k);
   if (k === 2n && radable(a)) return sqrtRad(a);
   if (k === 2n && isPi(a) && a.pp.length === 1 && a.pp[0].k % 2 === 0) { // √(4π²) = 2π
@@ -1404,7 +1535,7 @@ function zerosOf(v) {
 }
 
 // ---- trigonometry: exact at every multiple of 1.5°, decimals elsewhere ----
-const FN_LABEL = { sin: 'sin', cos: 'cos', tan: 'tan', csc: 'csc', sec: 'sec', cot: 'cot', asin: 'arcsin', acos: 'arccos', atan: 'arctan' };
+const FN_LABEL = { sin: 'sin', cos: 'cos', tan: 'tan', csc: 'csc', sec: 'sec', cot: 'cot', asin: 'arcsin', acos: 'arccos', atan: 'arctan', ln: 'ln', log: 'log' };
 const INV_OF = { asin: 'sin', acos: 'cos', atan: 'tan' };
 const RECIP_OF = { csc: 'sin', sec: 'cos', cot: 'tan' };
 const HALF = Q(1n, 2n);
@@ -1512,6 +1643,7 @@ function trigExactDegUncached(name, dq) {
 }
 function trigV(name, x) {
   if (isAlg(x)) throw new NotPolyError(NOT_POLY);
+  if (isCx(x)) throw new CalcError('Trig of imaginary numbers isn’t supported.');
   if (INV_OF[name]) {
     const xf = toF(x);
     if (name !== 'atan' && Math.abs(xf) > 1 + 1e-12) throw new CalcError(`${FN_LABEL[name]} only works for numbers from −1 to 1.`);
@@ -1636,12 +1768,12 @@ function piHTML(v) {
 const piIsSum = v => isPi(v) && v.pp.length > 1 && v.pp.every(m => m.k >= 0 && dens1(m.c));
 const dens1 = c => (isQ(c) ? c.d === 1n : isSurd(c) ? c.c.d === 1n : c.t.every(m => m.c.d === 1n));
 // Exact in this view? Surds and π-multiples are exact unless shown as decimals.
-const exactIn = (v, view) => (isAlg(v) ? algCoefs(v).every(c => exactIn(c, view))
+const exactIn = (v, view) => (isCx(v) ? exactIn(v.re, view) && exactIn(v.im, view) : isApprox(v) && v.ek ? view !== 'dec' : isAlg(v) ? algCoefs(v).every(c => exactIn(c, view))
   : isQ(v) || ((isSurd(v) || isPi(v) || isRad(v)) && view !== 'dec'));
-const irrHTML = (v, view, sig) => (isAlg(v) ? algHTML(v, view) : exactIn(v, view) ? (isSurd(v) ? surdHTML(v) : isRad(v) ? radHTML(v) : piHTML(v)) : fmtFloat(toF(v), sig));
+const irrHTML = (v, view, sig) => (isCx(v) ? cxHTML(v, view, sig) : isAlg(v) ? algHTML(v, view) : exactIn(v, view) ? (isApprox(v) ? eHTML(v) : isSurd(v) ? surdHTML(v) : isRad(v) ? radHTML(v) : piHTML(v)) : fmtFloat(toF(v), sig));
 
-function valueHTML(q, view) {
-  if (!isQ(q)) return irrHTML(q, view);
+function valueHTML(q, view, sig) {
+  if (!isQ(q)) return irrHTML(q, view, sig);
   if (view === 'dec') return decHTML(q);
   if (view === 'mixed') return mixedHTML(q.n, q.d);
   return fracHTML(q.n, q.d);
@@ -1725,7 +1857,9 @@ function tokenize(arr) {
       }
     } else if (it.t === 'pi') {
       out.push({ k: 'pi' });
-    } else if (it.t === 'x' || it.t === 'y') {
+    } else if (it.t === 'log') {
+      out.push({ k: 'fn', name: 'log', a: parseSlot(it.la, 'the inside of log( )'), b: it.lb.length ? parseArr(it.lb) : null });
+    } else if (['x', 'y', 'e', 'i'].includes(it.t)) {
       out.push({ k: it.t });
     } else if (it.t === 'v') {
       out.push({ k: 'v', v: it.v });
@@ -1739,7 +1873,7 @@ function parseArr(arr) {
   let p = 0;
   const peek = () => t[p];
   const isOp = (tk, ...vs) => tk && tk.k === 'op' && vs.includes(tk.v);
-  const startsPrimary = tk => tk && ['num', 'ans', 'frac', 'mixed', 'root', 'fn', 'pi', 'x', 'y', 'v', '('].includes(tk.k);
+  const startsPrimary = tk => tk && ['num', 'ans', 'frac', 'mixed', 'root', 'fn', 'pi', 'x', 'y', 'v', 'e', 'i', '('].includes(tk.k);
 
   function expr() {
     let a = term();
@@ -1790,13 +1924,15 @@ function parseArr(arr) {
       case 'mixed': return { k: 'mixed', w: tk.w, a: tk.a, b: tk.b };
       case 'root': return { k: 'root', a: tk.a, b: tk.b };
       case 'fn': {
-        const f = { k: 'fn', name: tk.name, a: tk.a, alias: tk.alias };
+        const f = { k: 'fn', name: tk.name, a: tk.a, b: tk.b, alias: tk.alias };
         return tk.pw ? { k: 'pow', a: f, b: tk.pw, fnPow: true } : f; // sin²(x) = (sin x)²
       }
       case 'pi': return { k: 'pi' };
       case 'x': return { k: 'x' };
       case 'y': return { k: 'y' };
       case 'v': return { k: 'v', name: tk.v };
+      case 'e': return { k: 'e' };
+      case 'i': return { k: 'i' };
       case 'pow': throw new CalcError('An exponent needs a number in front of it.');
       case '(': {
         if (peek() && peek().k === ')') throw new CalcError('The parentheses ( ) are empty.');
@@ -1842,6 +1978,8 @@ function norm(n, notes) {
   switch (n.k) {
     case 'num': return n;
     case 'pi': return num(mkPi(Q(1n)));
+    case 'e': return num(E_CONST);
+    case 'i': return num(I_UNIT);
     case 'x': return num(E.xval !== undefined ? E.xval : X_POLY); // xval: evaluate at an exact x
     case 'y': case 'v': throw new CalcError('Other letters belong on the System solver and Simplify / factor pages.');
     case 'fn': {
@@ -1922,7 +2060,7 @@ function firstGroup(n) {
   if (n.k === 'neg') return firstGroup(n.a);
   if (n.k === 'pow') return firstGroup(n.a) || (isNum(n.b) ? null : n);
   if (n.k === 'root') return isNum(n.a) && (!n.b || isNum(n.b)) ? null : n;
-  if (n.k === 'fn') return isNum(n.a) ? null : n;
+  if (n.k === 'fn') return isNum(n.a) && (!n.b || isNum(n.b)) ? null : n;
   return null;
 }
 // In-order list of the binary operations and the exponents/roots in one scope.
@@ -1966,7 +2104,7 @@ function inScope(scope, where) {
     if (g.k === 'frac') return isNum(g.a) ? inScope(g.b, 'the bottom of the fraction') : inScope(g.a, 'the top of the fraction');
     if (g.k === 'pow') return inScope(g.b, 'the exponent');
     if (g.k === 'root') return isNum(g.a) ? inScope(g.b, 'the root’s small number') : inScope(g.a, 'the root');
-    if (g.k === 'fn') return inScope(g.a, `${FN_LABEL[g.name]}( )`);
+    if (g.k === 'fn') return !isNum(g.a) ? inScope(g.a, `${FN_LABEL[g.name]}( )`) : inScope(g.b, 'the log’s base');
     const k = ['w', 'a', 'b'].find(k => !isNum(g[k]));
     return inScope(g[k], 'the mixed number');
   }
@@ -1981,14 +2119,14 @@ function inScope(scope, where) {
     }
     let negParent = false;
     walk(scope, x => { if (x.k === 'neg' && x.a === e) negParent = true; });
-    let note = e.k === 'fn' ? trigNote(e) : eNote(e);
+    let note = e.k === 'fn' ? (LOGS.has(e.name) ? logNote(e) : trigNote(e)) : eNote(e);
     let fnPow = null;
     walk(scope, x => { if (x.k === 'pow' && x.fnPow && x.a === e) fnPow = x; });
     if (fnPow) note += ` — ${FN_LABEL[e.name]}<sup>${pr(fnPow.b)}</sup>(x) means (${FN_LABEL[e.name]} x)<sup>${pr(fnPow.b)}</sup>, so find ${FN_LABEL[e.name]} first`;
     if (where) note += ` (inside ${where})`;
     if (negParent) note += ' — the minus sign in front is applied after';
     else if (bins.length) note += e.k === 'fn' ? ' — work it out before × ÷ + −' : ' — exponents and roots come before × ÷ + −';
-    return { kind: 'op', node: e, note, tag: where ? 'paren' : e.k === 'fn' ? 'trig' : 'pow' };
+    return { kind: 'op', node: e, note, tag: where ? 'paren' : e.k === 'fn' ? (LOGS.has(e.name) ? 'log' : 'trig') : 'pow' };
   }
 
   const ready = b => isNum(b.a) && isNum(b.b);
@@ -2000,7 +2138,9 @@ function inScope(scope, where) {
   if (sub) return { ...sub, node: pick };
 
   const isMD = md.includes(pick);
-  let note = isAlg(pick.a.v) || isAlg(pick.b.v) ? algNote(pick) : VERB[pick.op];
+  let note = isAlg(pick.a.v) || isAlg(pick.b.v) ? algNote(pick)
+    : pick.op === '*' && isCx(pick.a.v) && isCx(pick.b.v) ? 'Multiply out the brackets — and i² = −1'
+    : pick.op === '/' && isCx(pick.b.v) ? 'Divide: multiply the top and bottom by the conjugate (flip the sign of the i part)' : VERB[pick.op];
   if (where) note += ` inside ${where}`;
   if (isMD && as.length) note += ' — × and ÷ come before + and −';
   else if ((isMD ? md : as).length > 1) note += ' (left to right)';
@@ -2035,6 +2175,7 @@ function eNote(e) {
   let v;
   try { v = rootV(e.a.v, k); } catch { return name; }
   const a = e.a.v;
+  if (isCx(v) && !isCx(a)) return `${name} of a negative number: ${rootHTML(MINUS + '1')} = <i class="xv">i</i>, so the answer is imaginary`;
   if (isQ(v) && isQ(a)) return `${name}: ${pr(num(v))}, because ${powBase(num(v))}<sup>${k.n}</sup> = ${pr(e.a)}`;
   if (isSurd(v) && isQ(a) && a.d === 1n && a.n > 0n && v.c.d === 1n && v.c.n > 1n && E.view !== 'dec') {
     const idx = k.n === 2n ? null : String(k.n);
@@ -2088,7 +2229,19 @@ function findAction(root) {
 }
 
 const evalE = n => (n.k === 'pow' ? powV(n.a.v, n.b.v) : rootV(n.a.v, n.b ? n.b.v : Q(2n)));
+// What a log step means: which power of the base gives the number.
+function logNote(e) {
+  const base = e.name === 'ln' ? '<i class="xv">e</i>' : e.b ? pr(e.b) : '10';
+  const what = e.name === 'ln' ? 'ln is log base <i class="xv">e</i>' : e.b ? `log base ${base}` : 'log with no base is base 10';
+  let v;
+  try { v = logV(e.name, e.a.v, e.b && e.b.v); } catch { return what; }
+  if (isQ(v)) return `${what}: ${base}<sup>${qText(v)}</sup> = ${pr(e.a)}, so it’s ${pr(num(v))}`;
+  if (isCx(v)) return `${what}: the log of a negative number is imaginary — ln(${MINUS}<i class="xv">a</i>) = ln <i class="xv">a</i> + <i class="xv">i</i>π`;
+  return `${what}: ${pr(e.a)} isn’t a neat power of ${base}, so the answer is a decimal`;
+}
+
 function computeE(n) {
+  if (n.k === 'fn' && LOGS.has(n.name)) return num(logV(n.name, n.a.v, n.b && n.b.v));
   if (n.k === 'fn') return num(trigV(n.name, n.a.v), { unit: INV_OF[n.name] && E.angle === 'deg' ? '°' : undefined });
   const v = evalE(n);
   if (E.view === 'dec' || !isQ(v)) return num(v);
@@ -2189,18 +2342,19 @@ function prRaw(n, hl) {
     case 'x': return '<i class="xv">x</i>';
     case 'y': return '<i class="xv">y</i>';
     case 'v': return `<i class="xv">${n.name}</i>`;
+    case 'e': case 'i': return `<i class="xv">${n.k}</i>`;
     case 'fn': return fnHTML(n, hl);
     case 'bin': {
       if (n.bar) return fr(pr(n.a, hl), pr(n.b, hl));
       const side = (c, right) => {
         const s = pr(c, hl);
-        const sum = isNum(c) && c.style === 'irr' && (((radIsSum(c.v) || piIsSum(c.v)) && E.view !== 'dec') || (isPoly(c.v) && c.v.px.length > 1)); // 2(1 + √2), 3 − (π + 1), 2(x + 1)
+        const sum = isNum(c) && c.style === 'irr' && (((radIsSum(c.v) || piIsSum(c.v)) && E.view !== 'dec') || (isPoly(c.v) && c.v.px.length > 1) || (isCx(c.v) && !isZero(c.v.re))); // 2(1 + √2), 3 − (π + 1), 2(x + 1), 2(3 + i)
         const wrap = (c.k === 'bin' && !c.bar && (PREC[c.op] < PREC[n.op] || (right && PREC[c.op] === PREC[n.op])))
           || (right && isNeg(c)) || (sum && (PREC[n.op] === 2 || (right && n.op === '-')));
         return wrap ? `(${s})` : s;
       };
       const L = side(n.a, false), R = side(n.b, true);
-      const juxtapose = ['grp', 'root', 'pi', 'fn', 'x', 'y', 'v'].includes(n.b.k) || (n.b.style === 'irr' && exactIn(n.b.v, E.view));
+      const juxtapose = ['grp', 'root', 'pi', 'fn', 'x', 'y', 'v', 'e', 'i'].includes(n.b.k) || (n.b.style === 'irr' && exactIn(n.b.v, E.view));
       if (n.imp && juxtapose) return L + R; // 2(3+4), 2√3, 2π, 2sin(30°)
       return `${L}<span class="op">${OPS[n.op]}</span>${R}`;
     }
@@ -2210,8 +2364,8 @@ function prRaw(n, hl) {
 function fnHTML(n, hl, sup = '') {
   // sin(30°): show the degree sign on a plain-number angle in degree mode
   const plain = isNum(n.a) || (n.a.k === 'neg' && isNum(n.a.a));
-  const deg = !INV_OF[n.name] && E.angle === 'deg' && plain && !n.a.unit ? '°' : '';
-  const label = n.alias ? `${INV_OF[n.name]}<sup class="sup">${MINUS}1</sup>` : FN_LABEL[n.name];
+  const deg = !INV_OF[n.name] && !LOGS.has(n.name) && E.angle === 'deg' && plain && !n.a.unit ? '°' : '';
+  const label = n.alias ? `${INV_OF[n.name]}<sup class="sup">${MINUS}1</sup>` : n.b ? `log<span class="sub">${pr(n.b, hl)}</span>` : FN_LABEL[n.name];
   return `<span class="fnn">${label}</span>${sup}(${pr(n.a, hl)}${deg})`;
 }
 
@@ -2224,6 +2378,7 @@ function needsBaseParens(a) {
   if (['bin', 'neg', 'pow', 'frac', 'mixed', 'root'].includes(a.k)) return true;
   if (a.k === 'fn') return false;
   if (!isNum(a)) return false;
+  if (isCx(a.v)) return !(isZero(a.v.re) && isOne(a.v.im)); // (1 + i)², (2i)², but i²
   if (isNeg(a) || a.style === 'mixed') return true;
   if (E.view === 'dec' || a.style === 'dec') return false;
   if (a.style === 'irr' && isAlg(a.v)) return !(isPoly(a.v) && a.v.px.length === 1 && a.v.px[0].k === 1 && eqV(a.v.px[0].c, Q(1n)));
@@ -2490,7 +2645,10 @@ function solveEquation(items, at, opts) {
 // which counts as one more letter. A rational expression is { n, d }, a polynomial over a polynomial.
 const ATOMS = new Map(); // atom key → { kind: 'var' | 'fn' | 'root', name, arg, k }
 const atomRank = a => (a.length === 1 ? 0 : 1);
-const cmpAtom = (a, b) => atomRank(a) - atomRank(b) || (a < b ? -1 : a > b ? 1 : 0);
+// Functions in the usual order (2 sin x cos x, tan x + cot x), then by what's inside.
+const FN_ORDER = ['sin', 'cos', 'tan', 'csc', 'sec', 'cot', 'asin', 'acos', 'atan', 'ln', 'log'];
+const fnRank = a => { const i = FN_ORDER.indexOf(a.slice(0, a.indexOf('('))); return i < 0 ? FN_ORDER.length : i; };
+const cmpAtom = (a, b) => atomRank(a) - atomRank(b) || (atomRank(a) && fnRank(a) - fnRank(b)) || (a < b ? -1 : a > b ? 1 : 0);
 const monoKey = m => m.map(([a, e]) => `${a}^${e}`).join('·');
 const coefKey = c => (isQ(c) ? `${c.n}/${c.d}` : JSON.stringify(enV(c)));
 const mpZero = () => new Map();
@@ -2616,7 +2774,10 @@ const mpEvalQ = (P, env) => mpEval(P, env, ARITH['*'], ARITH['+']);
 
 // ---- rational expressions ----
 const rx = (n, d = mpConst(Q(1n))) => ({ n, d });
-const rxConst = c => rx(mpConst(c));
+function rxConst(c) {
+  if (isCx(c)) throw new CalcError('Imaginary numbers only work on the calculator page.');
+  return rx(mpConst(c));
+}
 const rxIsConst = R => mpIsConst(R.n) && mpIsConst(R.d);
 const rxConstOf = R => opV('/', mpConstOf(R.n), mpConstOf(R.d));
 const rxKey = R => `${mpKey(R.n)}|${mpKey(R.d)}`;
@@ -2654,6 +2815,8 @@ function letterRX(n) {
   switch (n.k) {
     case 'num': return rxConst(n.v);
     case 'pi': return rxConst(mkPi(Q(1n)));
+    case 'e': return rxConst(E_CONST);
+    case 'i': return rxConst(I_UNIT);
     case 'x': case 'y': return rx(mpAtom(atomFor('var', n.k)));
     case 'v': return rx(mpAtom(atomFor('var', n.name)));
     case 'ans':
@@ -2691,8 +2854,11 @@ function letterRX(n) {
       return rx(mpAtom(atomFor('root', 'root', rxReduce(a).rx, Number(kv.n))));
     }
     case 'fn': {
-      const a = letterRX(n.a);
-      if (rxIsConst(a)) return rxConst(trigV(n.name, rxConstOf(a)));
+      const a = letterRX(n.a), b = n.b ? letterRX(n.b) : null;
+      if (LOGS.has(n.name)) {
+        if (rxIsConst(a) && (!b || rxIsConst(b))) return rxConst(logV(n.name, rxConstOf(a), b && rxConstOf(b)));
+        if (b) throw new CalcError('A log with a base can only take numbers here.');
+      } else if (rxIsConst(a)) return rxConst(trigV(n.name, rxConstOf(a)));
       return rx(mpAtom(atomFor('fn', n.name, rxReduce(a).rx)));
     }
   }
@@ -2951,15 +3117,32 @@ function primeHTML(q) {
 
 // ---- Simplify / factor ----
 function simplifyLetters(items) {
-  const view = S.view, ast = parseArr(items), raw = letterRX(ast), red = rxReduce(raw), R = red.rx;
+  const at = items.findIndex(isEqSign);
+  if (at >= 0) return checkIdentity(items.slice(0, at), items.slice(at + 1), S.view);
+  const view = S.view, ast = parseArr(items), raw = letterRX(ast), red = rxReduce(raw);
+  let R = red.rx, simp = rxHTML(R, view);
   const lines = [[null, pr(ast)]];
-  const rawH = rxHTML(raw, view), simp = rxHTML(R, view);
+  const rawH = rxHTML(raw, view);
   if (rawH !== lines[0][1]) lines.push([mpIsConst(raw.d) ? 'Expand and collect like terms' : 'Expand, and put it all over one bottom', rawH]);
   if (red.pyth) lines.push(['Use sin² + cos² = 1', rxHTML(rx(trigTidy(raw.n), trigTidy(raw.d)), view)]);
   if (red.roots) lines.push([`Use ${rootHTML('<i class="xv">a</i>')} · ${rootHTML('<i class="xv">a</i>')} = <i class="xv">a</i>`, rxHTML(rx(rootTidy(trigTidy(raw.n)), rootTidy(trigTidy(raw.d))), view)]);
   if (red.cancelled.length) {
     lines.push(['Factor the top and the bottom', fr(factHTML(red.fn, view), factHTML(red.fd, view))]);
     lines.push([`Cancel ${red.cancelled.map(p => `(${mpHTML(p, view)})`).join(', ')}`, simp]);
+  }
+  // trig: rewrite with the identities and keep whichever form is shortest
+  const forms = [], trig = trigSimplest(R, view);
+  if (trig) {
+    if (rxKey(trig.best) !== rxKey(R)) {
+      lines.push([`Rewrite in sin and cos${usedText(trig.used) ? ` (${usedText(trig.used)})` : ''}`, rxHTML(trig.A, view)]);
+      lines.push([trig.how, rxHTML(trig.best, view)]);
+      R = trig.best;
+      simp = rxHTML(R, view);
+    }
+    for (const [name, F] of [['In sin and cos', trig.sc], ['Product-to-sum form', trig.lin]]) {
+      const h = F && rxHTML(F, view);
+      if (h && h !== simp && !forms.some(f => f[1] === h)) forms.push([name, h]);
+    }
   }
   let fact = null, gcf = null;
   if (rxIsConst(R)) fact = primeHTML(rxConstOf(R));
@@ -2978,7 +3161,224 @@ function simplifyLetters(items) {
     }
     if (fact === simp) fact = null;
   }
-  return { lines, simp, fact, gcf, value: R };
+  return { lines, simp, fact, gcf, value: R, forms };
+}
+
+// ---- trig identities (Simplify / factor) ----
+// Every sin, cos, tan, csc, sec and cot is rewritten in sin and cos of "base angles": each letter (or other
+// symbol) in an angle, divided by whatever makes every multiple of it whole. sin(2x + 30°) uses the angle-sum
+// and double-angle formulas to become a polynomial in sin x and cos x; cos x next to sin(x/2) works in x/2.
+const TRIG6 = new Set(['sin', 'cos', 'tan', 'csc', 'sec', 'cot']);
+const trigOf = a => { const at = ATOMS.get(a); return at && at.kind === 'fn' && TRIG6.has(at.name) ? at : null; };
+const rxTrigAtoms = R => [...new Set([...mpAtoms(R.n), ...mpAtoms(R.d)])].filter(trigOf);
+// An angle as Σ q·symbol + constant: 2x + 30 has the symbol x with q = 2 and the constant 30.
+function angleParts(arg) {
+  const out = { syms: [], c: Q(0n) };
+  if (!mpIsConst(arg.d)) { out.syms.push({ key: 'R' + rxKey(arg), rx: arg, q: Q(1n) }); return out; }
+  const n = mpScale(arg.n, opV('/', Q(1n), mpConstOf(arg.d)));
+  for (const t of n.values()) {
+    if (!t.m.length) out.c = opV('+', out.c, t.c);
+    else if (isQ(t.c)) out.syms.push({ key: monoKey(t.m), rx: rx(mpMono(t.m)), q: t.c });
+    else out.syms.push({ key: monoKey(t.m) + coefKey(t.c), rx: rx(mpMono(t.m, t.c)), q: Q(1n) });
+  }
+  return out;
+}
+function trigPlan(atoms) {
+  const parts = new Map(atoms.map(a => [a, angleParts(ATOMS.get(a).arg)]));
+  const den = new Map(), symRx = new Map();
+  for (const p of parts.values()) for (const s of p.syms) { den.set(s.key, lcm(den.get(s.key) || 1n, s.q.d)); symRx.set(s.key, s.rx); }
+  const base = new Map();
+  for (const [k, D] of den) {
+    const r = symRx.get(k), b = rx(mpScale(r.n, Q(1n, D)), r.d);
+    base.set(k, { s: atomFor('fn', 'sin', b), c: atomFor('fn', 'cos', b), rx: b, D });
+  }
+  return { parts, base };
+}
+const mpPow = (P, e) => { let r = mpConst(Q(1n)); for (let i = 0; i < e; i++) r = mpMul(r, P); return r; };
+// sin nθ and cos nθ from (cos θ + i sin θ)ⁿ = cos nθ + i sin nθ.
+function multAngle(n, b) {
+  const m = Math.abs(n), S_ = mpAtom(b.s), C = mpAtom(b.c);
+  if (m > 40) throw new CalcError('That multiple of an angle is too big to expand.');
+  let sn = mpZero(), cn = mpZero(), binom = 1n;
+  for (let k = 0; k <= m; k++) {
+    const term = mpScale(mpMul(mpPow(C, m - k), mpPow(S_, k)), Q((k >> 1) % 2 ? -binom : binom));
+    if (k % 2) sn = mpAdd(sn, term); else cn = mpAdd(cn, term);
+    binom = binom * BigInt(m - k) / BigInt(k + 1);
+  }
+  return [n < 0 ? mpScale(sn, Q(-1n)) : sn, cn];
+}
+const trigAt = (name, v) => (isZero(v) ? Q(name === 'sin' ? 0n : 1n) : trigV(name, v));
+// sin and cos of one angle, as polynomials in the base angles' sines and cosines.
+function sinCosOf(p, plan, used) {
+  let s = mpConst(trigAt('sin', p.c)), c = mpConst(trigAt('cos', p.c));
+  if (p.syms.length > 1 || !isZero(p.c)) used.add('sum');
+  if (!isZero(p.c)) used.add('value');
+  for (const sym of p.syms) {
+    const b = plan.base.get(sym.key), n = Number(sym.q.n * (b.D / sym.q.d));
+    if (n < 0) used.add('evenodd');
+    if (Math.abs(n) > 1) used.add(Math.abs(n) === 2 ? 'double' : Math.abs(n) === 3 ? 'triple' : 'multiple');
+    const [sn, cn] = multAngle(n, b);
+    [s, c] = [mpAdd(mpMul(s, cn), mpMul(c, sn)), mpAdd(mpMul(c, cn), mpMul(s, sn), -1)];
+  }
+  return { s, c };
+}
+function trigRX(a, plan, used) {
+  const at = ATOMS.get(a), { s, c } = sinCosOf(plan.parts.get(a), plan, used), S_ = rx(s), C = rx(c), one = rxConst(Q(1n));
+  if (at.name === 'tan' || at.name === 'cot') used.add('quotient');
+  if (at.name === 'sec' || at.name === 'csc' || at.name === 'cot') used.add('reciprocal');
+  switch (at.name) {
+    case 'sin': return S_;
+    case 'cos': return C;
+    case 'tan': return rxDiv(S_, C);
+    case 'cot': return rxDiv(C, S_);
+    case 'sec': return rxDiv(one, C);
+    default: return rxDiv(one, S_);
+  }
+}
+function rxSubst(P, map) {
+  let out = rx(mpZero());
+  for (const t of P.values()) {
+    let term = rx(mpMono(t.m.filter(([a]) => !map.has(a)), t.c));
+    for (const [a, e] of t.m) if (map.has(a)) for (let i = 0; i < e; i++) term = rxMul(term, map.get(a));
+    out = rxAdd(out, term);
+  }
+  return out;
+}
+// sin² + cos² = 1 one way or the other: every cos² becomes 1 − sin² (mode 'c'), or every sin² becomes 1 − cos².
+function pythSub(P, plan, mode) {
+  let out = mpZero();
+  for (const t of P.values()) {
+    let m = t.m, extra = mpConst(t.c);
+    for (const b of plan.base.values()) {
+      const tg = mode === 'c' ? b.c : b.s, ot = mode === 'c' ? b.s : b.c, e = expIn(m, tg);
+      if (e < 2) continue;
+      m = m.map(([a, x]) => [a, a === tg ? e % 2 : x]).filter(([, x]) => x > 0);
+      const one = mpAdd(mpConst(Q(1n)), mpMul(mpAtom(ot), mpAtom(ot)), -1);
+      for (let i = 0; i < e >> 1; i++) extra = mpMul(extra, one);
+    }
+    out = mpAdd(out, mpMul(extra, mpMono(m)));
+  }
+  return out;
+}
+// Product-to-sum form: each sine and cosine is written as complex exponentials (cos θ = (e^iθ + e^−iθ)/2), the
+// products multiplied out, and the pairs turned back into single sines and cosines (sin²x = ½ − ½ cos 2x).
+// This form is unique, so it decides whether something is 0, which is how identities are checked.
+function linearize(P, plan) {
+  const bases = [...plan.base.values()], nb = bases.length, where = new Map();
+  bases.forEach((b, j) => { where.set(b.s, [j, 's']); where.set(b.c, [j, 'c']); });
+  const put = (map, f, Pc) => {
+    const k = f.join(','), cur = map.get(k), s = cur ? mpAdd(cur.P, Pc) : Pc;
+    if (s.size) map.set(k, { f, P: s }); else map.delete(k);
+  };
+  const half = Q(1n, 2n), up = { s: cx(Q(0n), Q(-1n, 2n)), c: half }, down = { s: cx(Q(0n), Q(1n, 2n)), c: half };
+  const acc = new Map();
+  for (const t of P.values()) {
+    let cur = new Map([[Array(nb).fill(0).join(','), { f: Array(nb).fill(0), P: mpMono(t.m.filter(([a]) => !where.has(a)), t.c) }]]);
+    for (const [a, e] of t.m) {
+      if (!where.has(a)) continue;
+      const [j, kind] = where.get(a);
+      for (let r = 0; r < e; r++) {
+        const next = new Map();
+        for (const { f, P: Pc } of cur.values()) for (const [d, w] of [[1, up[kind]], [-1, down[kind]]]) { const g = f.slice(); g[j] += d; put(next, g, mpScale(Pc, w)); }
+        cur = next;
+      }
+    }
+    for (const { f, P: Pc } of cur.values()) put(acc, f, Pc);
+  }
+  let out = mpZero();
+  const done = new Set();
+  for (const { f, P: A } of acc.values()) {
+    const k = f.join(',');
+    if (done.has(k)) continue;
+    const g = f.map(x => -x), gk = g.join(',');
+    done.add(k); done.add(gk);
+    if (f.every(x => x === 0)) { out = mpAdd(out, A); continue; }
+    const B = acc.get(gk)?.P || mpZero(), first = f.find(x => x !== 0) > 0;
+    const [Ap, Bp] = first ? [A, B] : [B, A], pos = first ? f : g;
+    let ang = rx(mpZero());
+    pos.forEach((n, j) => { if (n) ang = rxAdd(ang, rxMul(rxConst(Q(BigInt(n))), bases[j].rx)); });
+    const cosC = mpAdd(Ap, Bp), sinC = mpScale(mpAdd(Ap, Bp, -1), I_UNIT); // A e^iΦ + B e^−iΦ = (A + B) cos Φ + i(A − B) sin Φ
+    if (cosC.size) out = mpAdd(out, mpMul(cosC, mpAtom(atomFor('fn', 'cos', ang))));
+    if (sinC.size) out = mpAdd(out, mpMul(sinC, mpAtom(atomFor('fn', 'sin', ang))));
+  }
+  return out;
+}
+const IDENTITY_NAMES = {
+  quotient: 'tan = sin ⁄ cos', reciprocal: 'sec = 1 ⁄ cos, csc = 1 ⁄ sin, cot = cos ⁄ sin',
+  sum: 'angle sum and difference', value: 'exact values', evenodd: 'sin(−θ) = −sin θ, cos(−θ) = cos θ',
+  double: 'double angle', triple: 'triple angle', multiple: 'multiple angle',
+};
+const usedText = used => [...used].filter(u => IDENTITY_NAMES[u]).map(u => IDENTITY_NAMES[u]).join(' · ');
+// Everything in sin and cos of the base angles.
+function trigExpand(R, used, plan) {
+  const atoms = rxTrigAtoms(R);
+  plan = plan || trigPlan(atoms);
+  const map = new Map(atoms.map(a => [a, trigRX(a, plan, used)]));
+  return { A: rxDiv(rxSubst(R.n, map), rxSubst(R.d, map)), plan };
+}
+const rxScore = R => R.n.size + (mpIsConst(R.d) ? 0 : R.d.size) + rxHTML(R).replace(/<[^>]+>/g, '').length / 40;
+// The shortest of: as typed, in sin and cos, either way round of sin² + cos² = 1, and product-to-sum.
+function trigSimplest(R0, view) {
+  if (!rxTrigAtoms(R0).length) return null;
+  const used = new Set(), { A, plan } = trigExpand(R0, used);
+  const cands = [[R0, null], [rxReduce(A).rx, 'Simplify and cancel'],
+    [rxReduce(rx(pythSub(A.n, plan, 'c'), pythSub(A.d, plan, 'c'))).rx, 'Use sin² + cos² = 1 (cos² = 1 − sin²)'],
+    [rxReduce(rx(pythSub(A.n, plan, 's'), pythSub(A.d, plan, 's'))).rx, 'Use sin² + cos² = 1 (sin² = 1 − cos²)']];
+  let lin = null;
+  if (mpIsConst(A.d)) { lin = rx(mpScale(linearize(A.n, plan), opV('/', Q(1n), mpConstOf(A.d)))); cands.push([lin, 'Product-to-sum and power-reducing formulas']); }
+  let best = cands[0];
+  for (const c of cands) if (rxScore(c[0]) < rxScore(best[0]) - 1e-9) best = c;
+  return { best: best[0], how: best[1], A, used, lin, sc: rxReduce(A).rx };
+}
+// A number for each letter, to show where a non-identity fails.
+function atomF(a, env) {
+  const at = ATOMS.get(a);
+  if (!at || at.kind === 'var') {
+    if (!env.has(a)) env.set(a, E.angle === 'deg' ? 37 + 22 * env.size : 0.7 + 0.43 * env.size);
+    return env.get(a);
+  }
+  const v = rxF(at.arg, env);
+  if (at.kind === 'root') return Math.pow(v, 1 / at.k);
+  const r = E.angle === 'deg' ? v * Math.PI / 180 : v, k = E.angle === 'deg' ? 180 / Math.PI : 1;
+  return { sin: Math.sin(r), cos: Math.cos(r), tan: Math.tan(r), csc: 1 / Math.sin(r), sec: 1 / Math.cos(r), cot: 1 / Math.tan(r),
+    asin: Math.asin(v) * k, acos: Math.acos(v) * k, atan: Math.atan(v) * k, ln: Math.log(v) }[at.name];
+}
+const mpF = (P, env) => [...P.values()].reduce((s, t) => s + t.m.reduce((p, [a, e]) => p * atomF(a, env) ** e, toF(t.c)), 0);
+const rxF = (R, env) => mpF(R.n, env) / mpF(R.d, env);
+// left = right: true for every value of the letters?
+function checkIdentity(L, R, view) {
+  if (!L.length || !R.length) throw new CalcError('Type both sides of the identity.');
+  if (R.some(isEqSign)) throw new CalcError('An identity has just one =.');
+  const lr = letterRX(parseArr(L)), rr = letterRX(parseArr(R));
+  const lines = [[null, `${pr(parseArr(L))} = ${pr(parseArr(R))}`]];
+  const D = rxAdd(lr, rr, -1), used = new Set(), atoms = rxTrigAtoms(D);
+  let zero;
+  if (atoms.length) {
+    const plan = trigPlan([...new Set([...rxTrigAtoms(lr), ...rxTrigAtoms(rr), ...atoms])]);
+    const sl = trigExpand(lr, used, plan).A, sr = trigExpand(rr, used, plan).A;
+    const tl = trigSimplest(lr, view), tr = trigSimplest(rr, view);
+    if (usedText(used)) lines.push([`Write both sides in sin and cos (${usedText(used) || 'sin and cos'})`, `${rxHTML(rxReduce(sl).rx, view)} = ${rxHTML(rxReduce(sr).rx, view)}`]);
+    const hl = rxHTML(tl ? tl.best : rxReduce(lr).rx, view), hr = rxHTML(tr ? tr.best : rxReduce(rr).rx, view);
+    lines.push(['Simplify each side', `${hl} = ${hr}`]);
+    const diff = trigExpand(D, new Set(), plan).A, lin = linearize(diff.n, plan);
+    zero = !lin.size;
+    if (hl !== hr) lines.push(['Move everything to one side and write it with product-to-sum formulas', `${mpHTML(lin, view)} = 0`]);
+  } else {
+    const dl = rxReduce(D).rx;
+    zero = !dl.n.size;
+    lines.push(['Expand and simplify each side', `${rxHTML(rxReduce(lr).rx, view)} = ${rxHTML(rxReduce(rr).rx, view)}`]);
+  }
+  let counter = null;
+  if (!zero) { // a decimal coefficient can hide a 0; check with numbers too
+    const envs = [new Map(), new Map([['__', 0]])], vals = envs.map(env => [rxF(lr, env), rxF(rr, env)]);
+    if (vals.every(([a, b]) => Math.abs(a - b) < 1e-9 * Math.max(1, Math.abs(a)))) zero = true;
+    else {
+      const env = envs[0], [a, b] = vals[0];
+      const at = [...env].filter(([k]) => k.length === 1).map(([k, v]) => `<i class="xv">${k}</i> = ${fmtFloat(v, 4)}${E.angle === 'deg' ? '°' : ''}`).join(', ');
+      counter = `${at ? `at ${at}, ` : ''}the left side is ${fmtFloat(a, 6)} and the right side is ${fmtFloat(b, 6)}`;
+    }
+  }
+  return { identity: zero, lines, counter };
 }
 
 // ---- exact roots of a polynomial in one letter ----
@@ -3207,11 +3607,11 @@ const $ = s => document.querySelector(s);
 const exprEl = $('#expr'), resultEl = $('#result'), altEl = $('#alt'), hintEl = $('#hint');
 const ansLineEl = $('#ansLine'), padEl = $('#pad'), toastEl = $('#toast');
 
-const SLOTS = { frac: ['num', 'den'], mixed: ['whole', 'num', 'den'], pow: ['exp'], root: ['idx', 'rad'], fn: ['pw', 'arg'], rep: ['rep'] };
+const SLOTS = { frac: ['num', 'den'], mixed: ['whole', 'num', 'den'], pow: ['exp'], root: ['idx', 'rad'], fn: ['pw', 'arg'], log: ['lb', 'la'], rep: ['rep'] };
 const isTpl = it => !!it && Object.hasOwn(SLOTS, it.t);
 const tplEmpty = it => SLOTS[it.t].every(s => it[s].length === 0);
 // Moving right into a root skips its (usually empty, hidden) index box.
-const entrySlot = it => (it.t === 'root' && !it.idx.length ? 'rad' : it.t === 'fn' && !it.pw.length ? 'arg' : SLOTS[it.t][0]);
+const entrySlot = it => (it.t === 'root' && !it.idx.length ? 'rad' : it.t === 'fn' && !it.pw.length ? 'arg' : it.t === 'log' && !it.lb.length ? 'la' : SLOTS[it.t][0]);
 const VIEWS = ['frac', 'mixed', 'dec'];
 const VIEW_NAMES = { frac: 'Fraction', mixed: 'Mixed number', dec: 'Decimal' };
 
@@ -3261,10 +3661,10 @@ function edited() { S.afterEval = false; S.committed = null; }
 // "1 f 3 × 2" should mean (1/3) × 2, "2 ^ 3 + 1" 2³ + 1 and "sin 30 + 1" sin(30°) + 1: an operator
 // after a plain number in a denominator, exponent, root or function steps out of the box.
 // Type ( first for more.
-const AUTO_EXIT_SLOTS = new Set(['den', 'exp', 'rad', 'arg', 'rep']);
+const AUTO_EXIT_SLOTS = new Set(['den', 'exp', 'rad', 'arg', 'la', 'rep']);
 function exitSimpleBox(slots = AUTO_EXIT_SLOTS) {
   const p = S.cur.path.at(-1), arr = curArr();
-  if (p && slots.has(p.slot) && S.cur.i === arr.length && arr.length && arr.every(it => isDigitCh(it) || ['x', 'y', 'v'].includes(it.t))) moveRight();
+  if (p && slots.has(p.slot) && S.cur.i === arr.length && arr.length && arr.every(it => isDigitCh(it) || ['x', 'y', 'v', 'e', 'i', 'pi'].includes(it.t))) moveRight();
 }
 
 function typeChar(v, isOp) {
@@ -3368,6 +3768,21 @@ function insertFn(name) {
   S.cur.i = 0;
   edited();
 }
+// L: log with its base box first (left empty, the base is 10); Enter moves on to the brackets.
+function insertLog() {
+  startTyping(false);
+  curArr().splice(S.cur.i, 0, { t: 'log', lb: [], la: [] });
+  S.cur.path.push({ idx: S.cur.i, slot: 'lb' });
+  S.cur.i = 0;
+  edited();
+}
+// e and i, typed like π.
+function typeConst(t) {
+  startTyping(false);
+  curArr().splice(S.cur.i, 0, { t });
+  S.cur.i++;
+  edited();
+}
 function toggleAngle() {
   S.angle = S.angle === 'deg' ? 'rad' : 'deg';
   save();
@@ -3415,7 +3830,7 @@ function insertTpl(kind) {
       }
     } else if (prev && prev.t === 'ans') j--;
     // 3, 0.5, 2π, √3, 3², sin(30°)
-    else while (isDigitCh(arr[j - 1]) || (arr[j - 1] && ['pi', 'x', 'y', 'v', 'root', 'pow', 'fn', 'rep'].includes(arr[j - 1].t))) j--;
+    else while (isDigitCh(arr[j - 1]) || (arr[j - 1] && ['pi', 'x', 'y', 'v', 'e', 'i', 'root', 'pow', 'fn', 'log', 'rep'].includes(arr[j - 1].t))) j--;
   } else {
     let k = j;
     while (isDigitCh(arr[k - 1])) k--;
@@ -3520,7 +3935,7 @@ function moveRight() {
     c.i = p.idx + 1;
   }
 }
-const VERT = { up: { den: 'num', whole: 'num', rad: 'idx', arg: 'pw' }, down: { num: 'den', whole: 'den', idx: 'rad', pw: 'arg' } };
+const VERT = { up: { den: 'num', whole: 'num', rad: 'idx', arg: 'pw', lb: 'la' }, down: { num: 'den', whole: 'den', idx: 'rad', pw: 'arg', la: 'lb' } };
 function moveVert(dir) {
   const c = S.cur, map = VERT[dir < 0 ? 'up' : 'down'];
   if (c.path.length) {
@@ -3661,12 +4076,12 @@ function typeY() {
   S.cur.i++;
   edited();
 }
-// = types an equals sign in the System solver; everywhere else it saves.
-const pressEquals = () => (S.page === 'system' ? typeEquals() : equals());
+// = types an equals sign in the System solver and Simplify (an identity to check); on the calculator it saves.
+const pressEquals = () => (S.page === 'main' ? equals() : typeEquals());
 // It always goes between the two sides, outside any box.
 function typeEquals() {
-  if (S.page !== 'system') { toast(`Equations go in the System solver (${pageKey('system')})`); return; }
-  if (S.root.some(isEqSign)) { toast('An equation has just one ='); return; }
+  if (S.page === 'main') { toast(`Equations go in the System solver (${pageKey('system')})`); return; }
+  if (S.root.some(isEqSign)) { toast(S.page === 'system' ? 'An equation has just one =' : 'An identity has just one ='); return; }
   if (S.cur.path.length) S.cur = { path: [], i: S.cur.path[0].idx + 1 };
   S.root.splice(S.cur.i, 0, { t: 'c', v: '=' });
   S.cur.i++;
@@ -3674,7 +4089,7 @@ function typeEquals() {
 }
 // Simplify / factor: letters type themselves, and letters that spell a function become it, however slowly
 // they're typed (s i n → sin( )).
-const WORDS = [['arcsin', 'asin'], ['arccos', 'acos'], ['arctan', 'atan'], ['sqrt', 'root'], ['sin', 'sin'], ['cos', 'cos'], ['tan', 'tan'], ['csc', 'csc'], ['sec', 'sec'], ['cot', 'cot'], ['pi', 'pi']];
+const WORDS = [['ln', 'ln'], ['arcsin', 'asin'], ['arccos', 'acos'], ['arctan', 'atan'], ['sqrt', 'root'], ['sin', 'sin'], ['cos', 'cos'], ['tan', 'tan'], ['csc', 'csc'], ['sec', 'sec'], ['cot', 'cot'], ['pi', 'pi']];
 function typeLetter(l) {
   startTyping(false);
   const arr = curArr();
@@ -3693,7 +4108,7 @@ function typeLetter(l) {
 // ---------- actions & keybinds ----------
 const ICON_FRAC = `<span class="fr"><span class="fr-n"><i class="box"></i></span><span class="fr-d"><i class="box"></i></span></span>`;
 const A = {};
-const GROUPS = ['Pages', 'Numbers', 'Operations', 'Powers & roots', 'Trigonometry', 'Algebra & graphs', 'Fractions', 'Calculate', 'Editing', 'Move cursor'];
+const GROUPS = ['Pages', 'Numbers', 'Operations', 'Powers & roots', 'Logs, e & i', 'Trigonometry', 'Algebra & graphs', 'Fractions', 'Calculate', 'Editing', 'Move cursor'];
 function action(id, name, group, run, label, cls = 'fn') { A[id] = { id, name, group, run, label: label ?? name, cls }; }
 
 for (let d = 0; d <= 9; d++) action('d' + d, `Digit ${d}`, 'Numbers', () => typeChar(String(d), false), String(d), 'num');
@@ -3710,9 +4125,13 @@ action('root', 'Root (√, add a small index for ∛)', 'Powers & roots', () => 
 const TRIG_NAMES = { sin: 'Sine', cos: 'Cosine', tan: 'Tangent', csc: 'Cosecant', sec: 'Secant', cot: 'Cotangent', asin: 'Arcsine', acos: 'Arccosine', atan: 'Arctangent' };
 for (const [fn, name] of Object.entries(TRIG_NAMES)) action(fn, `${name} (${FN_LABEL[fn]})`, 'Trigonometry', () => insertFn(fn), FN_LABEL[fn]);
 action('pi', 'Pi (π)', 'Trigonometry', typePi, 'π');
+action('log', 'Log (base in the small box; empty = 10)', 'Logs, e & i', insertLog, '<span>log<span class="sub"><i class="box"></i></span></span>');
+action('ln', 'Natural log (ln)', 'Logs, e & i', () => insertFn('ln'), 'ln');
+action('econst', 'e (2.71828…)', 'Logs, e & i', () => typeConst('e'), '<i class="xv">e</i>');
+action('imag', 'Imaginary unit i (i² = −1)', 'Logs, e & i', () => typeConst('i'), '<i class="xv">i</i>');
 action('angle', 'Degrees ⇄ radians', 'Trigonometry', toggleAngle, '');
 action('xvar', 'Variable x', 'Algebra & graphs', typeX, '<i class="xv">x</i>');
-action('equals', 'Equals: saves the answer (types = in the System solver)', 'Calculate', pressEquals, '=', 'eq');
+action('equals', 'Equals: saves the answer (types = in the System solver and Simplify)', 'Calculate', pressEquals, '=', 'eq');
 action('repeat', 'Repeating digits (0.3̅)', 'Numbers', typeRepeat, '<span>0.<span class="rep">3</span></span>');
 action('graph', 'Graph mode: f(x) = …', 'Algebra & graphs', toggleGraph, '');
 action('clearGraphs', 'Erase all graphs', 'Algebra & graphs', clearGraphs, '');
@@ -3747,12 +4166,13 @@ const DEFAULT_KEYS = {
   asin: ['a s'], acos: ['a c'], atan: ['a t'], pi: ['p'], angle: ['d'], xvar: ['x'], graph: ['x g'], clearGraphs: ['p z'], mixed: ['m'], view: ['v'], eq: ['q'], equals: ['='], next: ['Enter'], ans: ['a'],
   back: ['Backspace'], del: ['Delete'], clear: ['Escape'],
   left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'],
+  log: ['l'], ln: ['l n'], econst: ['e'], imag: ['i'],
   yvar: ['y'], eqsign: [], sysRow: [], sysClear: [], pageMain: ['p p 1'], pageSystem: ['p p 2'], pageSimplify: ['p p 3'],
 };
 for (const l of 'abcdefghijklmnopqrstuvwxyz') DEFAULT_KEYS['L_' + l] = [];
 
 const SCI = {
-  main: ['sin', 'cos', 'tan', 'csc', 'sec', 'cot', 'pi', 'angle', 'asin', 'acos', 'atan', 'xvar', 'repeat', 'graph'],
+  main: ['sin', 'cos', 'tan', 'csc', 'sec', 'cot', 'asin', 'acos', 'atan', 'pi', 'econst', 'imag', 'log', 'ln', 'xvar', 'repeat', 'angle', 'graph'],
   system: ['xvar', 'yvar', 'eqsign', 'sysRow', 'pi', 'repeat', 'sysClear'],
   simplify: ['sin', 'cos', 'tan', 'csc', 'sec', 'cot', 'pi', 'L_a', 'L_b', 'L_c', 'L_n', 'L_x', 'L_y', 'L_z'],
 };
@@ -3807,12 +4227,13 @@ const store = {
   get() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; } },
   set(v) { try { localStorage.setItem(STORE_KEY, JSON.stringify(v)); } catch {} },
 };
-const enV = v => (!v ? null : isPoly(v) ? { px: v.px.map(m => ({ k: m.k, c: enV(m.c) })), holes: holesOf(v).map(enV) }
-  : isRF(v) ? { rn: enV(v.rn), rd: enV(v.rd), holes: holesOf(v).map(enV) } : isApprox(v) ? { f: v.f } : isPi(v) ? { pp: v.pp.map(m => ({ k: m.k, c: enV(m.c) })) }
+const enV = v => (!v ? null : isCx(v) ? { re: enV(v.re), im: enV(v.im) } : isPoly(v) ? { px: v.px.map(m => ({ k: m.k, c: enV(m.c) })), holes: holesOf(v).map(enV) }
+  : isRF(v) ? { rn: enV(v.rn), rd: enV(v.rd), holes: holesOf(v).map(enV) } : isApprox(v) ? (v.ek ? { f: v.f, ek: enV(v.ek) } : { f: v.f }) : isPi(v) ? { pp: v.pp.map(m => ({ k: m.k, c: enV(m.c) })) }
   : isRad(v) ? { t: v.t.map(m => ({ c: enV(m.c), r: typeof m.r === 'bigint' ? String(m.r) : enV(m.r) })) }
   : isSurd(v) ? { c: enV(v.c), r: String(v.r), k: String(v.k) } : { n: String(v.n), d: String(v.d) });
 function deV(o) {
-  if (o.f !== undefined) return approx(Number(o.f));
+  if (o.im !== undefined) return { re: deV(o.re), im: deV(o.im) };
+  if (o.f !== undefined) return o.ek ? { f: Number(o.f), ek: deV(o.ek) } : approx(Number(o.f));
   if (o.px !== undefined || o.rd !== undefined) {
     const v = o.px !== undefined ? { px: o.px.map(m => ({ k: Number(m.k), c: deV(m.c) })) } : { rn: deV(o.rn), rd: deV(o.rd) };
     if (o.holes && o.holes.length) v.holes = o.holes.map(deV);
@@ -3827,7 +4248,7 @@ function deV(o) {
 function validItems(arr) {
   return Array.isArray(arr) && arr.every(it => it && (
     (it.t === 'c' && typeof it.v === 'string' && /^[0-9.+\-*/()=%]$/.test(it.v)) ||
-    it.t === 'ans' || it.t === 'pi' || it.t === 'x' ||
+    ['ans', 'pi', 'x', 'e', 'i'].includes(it.t) ||
     (isTpl(it) && (it.t !== 'fn' || ((it.pw ??= []) && Object.hasOwn(FN_LABEL, it.name))) && SLOTS[it.t].every(s => validItems(it[s])))
   ));
 }
@@ -3843,7 +4264,7 @@ function load() {
   if (s.angle === 'rad') S.angle = 'rad';
   S.hints = s.hints !== false;
   S.autoExit = s.autoExit !== false;
-  if (['steps', 'history', 'graph', 'keys'].includes(s.tab)) S.tab = s.tab;
+  if (['steps', 'history', 'graph', 'trig', 'keys'].includes(s.tab)) S.tab = s.tab;
   if (Array.isArray(s.pins)) S.pins = s.pins.filter(p => p && validItems(p.items)).slice(-5);
   S.fx = s.fx === true;
   for (const id in A) {
@@ -3917,8 +4338,12 @@ function edArr(arr, path, isRoot, live) {
       s += `<span class="ch ans"${at(i)}>Ans</span>`;
     } else if (it.t === 'pi') {
       s += `<span class="ch"${at(i)}>π</span>`;
-    } else if (it.t === 'x' || it.t === 'y' || it.t === 'v') {
+    } else if (['x', 'y', 'v', 'e', 'i'].includes(it.t)) {
       s += `<span class="ch xv"${at(i)}>${it.t === 'v' ? it.v : it.t}</span>`;
+    } else if (it.t === 'log') { // the base box only shows once it's used (or the cursor is in it)
+      const bPath = [...path, { idx: i, slot: 'lb' }];
+      const showB = it.lb.length || (live && samePath(S.cur.path.slice(0, bPath.length), bPath));
+      s += `<span class="fnw"${at(i)}><span class="fnn">log</span>${showB ? `<span class="sub">${edArr(it.lb, bPath, false, live)}</span>` : ''}(${edArr(it.la, [...path, { idx: i, slot: 'la' }], false, live)})</span>`;
     } else if (it.t === 'fn') {
       const pwPath = [...path, { idx: i, slot: 'pw' }];
       const showPw = it.pw.length || (live && samePath(S.cur.path.slice(0, pwPath.length), pwPath));
@@ -3981,8 +4406,9 @@ function renderHint() {
   const on = `${kbd('next')} moves on`;
   if (S.page === 'system' && !p) h = !S.root.length ? `Equation ${S.sysRow + 1} · ${kbd('xvar')} ${kbd('yvar')} ${kbd('equals')} type x, y and = · ${kbd('up')} ${kbd('down')} switch equations`
     : `Equation ${S.sysRow + 1} · solved as you type · ${S.sysRow ? `${kbd('up')} back to equation 1` : `${kbd('next')} on to equation 2`}`;
-  else if (S.page === 'simplify' && !p) h = !S.root.length ? `Letters type themselves · spell sin, cos, tan, sqrt or pi · ${kbd('pow')} power · ${kbd('frac')} fraction`
-    : `Simplified and factored as you type · ${kbd('pow')} power · ${kbd('frac')} fraction`;
+  else if (S.page === 'simplify' && !p) h = !S.root.length ? `Letters type themselves · spell sin, cos, tan, sqrt or pi · ${kbd('equals')} checks an identity`
+    : S.root.some(isEqSign) ? 'Checking the identity as you type · the Steps tab shows the working'
+    : `Simplified and factored as you type · ${kbd('pow')} power · ${kbd('frac')} fraction · ${kbd('equals')} checks an identity`;
   else if (S.fx && S.sel !== null) h = `Editing g${S.sel + 1}(x) · ${kbd('eq')} saves · ${kbd('clear')} deletes it · ${kbd('up')} ${kbd('down')} switch`;
   else if (S.fx && !S.root.length && S.pins.length) h = `Graph mode · ${kbd('up')} ${kbd('down')} pick a function · ${kbd('clear')} deletes it · ${kbd('clearGraphs')} erases all`;
   else if (S.fx && !S.root.length) h = `Graph mode · build f(x) with ${kbd('xvar')} · ${kbd('eq')} pins it to compare · ${kbd('graph')} or ${kbd('clear')} leaves`;
@@ -3995,6 +4421,8 @@ function renderHint() {
   else if (p && p.slot === 'exp') h = `Exponent · ${on}${S.autoExit ? ', or just type the next operator' : ''}`;
   else if (p && p.slot === 'rad') h = `Inside the root · ${on} · ${kbd('up')} adds a small index (3 = cube root)`;
   else if (p && p.slot === 'idx') h = `Root index (3 = cube root) · ${on} to inside the root`;
+  else if (p && p.slot === 'lb') h = `Base of the log · leave it empty for base 10 · ${on} to the brackets`;
+  else if (p && p.slot === 'la') h = `Inside log( ) · ${on}${S.autoExit ? ', or type an operator after a number' : ''} · ${kbd('down')} goes to the base`;
   else if (p && p.slot === 'pw') {
     const fn = FN_LABEL[arrAt(S.cur.path.slice(0, -1))[p.idx].name];
     h = `Power on ${fn}: ${fn}² is (${fn} x)², ${fn}<sup>−1</sup> is arc${fn} · ${on}`;
@@ -4090,7 +4518,7 @@ function systemHTML(res, view) {
   return blocks.length ? `<section class="extra"><h4>System: where they meet</h4>${blocks.join('')}</section>` : '';
 }
 
-const TAGS = { paren: '( )', trig: 'sin', pow: 'xⁿ √', md: '× ÷', as: '+ −', frac: 'a/b', rw: '↺' };
+const TAGS = { paren: '( )', trig: 'sin', log: 'log', pow: 'xⁿ √', md: '× ÷', as: '+ −', frac: 'a/b', rw: '↺' };
 const EXAMPLE = `1 + 2 × (${fr('3', '4')} − ${fr('1', '2')})`;
 
 function renderSteps(res) {
@@ -4106,6 +4534,8 @@ function renderSteps(res) {
         <li>${kbd('sin')} ${kbd('cos')} ${kbd('tan')} for trig — exact at every multiple of 1.5°: sin(30°) = ${fr('1', '2')}, sin(15°) = ${radHTML(sinQ1(30))}, sin(18°) = ${radHTML(sinQ1(36))}. ${kbd('angle')} switches degrees/radians and ${kbd('pi')} types π.</li>
         <li>${kbd('next')} moves to the next box: ${kbd('sin')} ${kbd('pow')} 2 ${kbd('next')} 3 0 is sin²(30°), while ${kbd('sin')} 3 0 ${kbd('pow')} 2 is sin(30²).</li>
         <li>${kbd('xvar')} types <i class="xv">x</i>: (<i class="xv">x</i> + 1)<sup class="sup">2</sup> expands to <i class="xv">x</i><sup class="sup">2</sup> + 2<i class="xv">x</i> + 1, and that factors back. ${kbd('graph')} graphs a function.</li>
+        <li>${kbd('log')} is log with a small base box (empty means base 10: log 1000 = 3, log<span class="sub">2</span> 8 = 3), ${kbd('ln')} is ln, and ${kbd('econst')} types <i class="xv">e</i> = 2.71828…</li>
+        <li>${kbd('imag')} types <i class="xv">i</i>, with <i class="xv">i</i><sup class="sup">2</sup> = −1: ${rootHTML('−4')} = 2<i class="xv">i</i>, (1 + 2<i class="xv">i</i>)(3 − <i class="xv">i</i>) = 5 + 5<i class="xv">i</i>, and <i class="xv">e</i><sup class="sup"><i class="xv">i</i>π</sup> = −1.</li>
         <li>${kbd('view')} switches the answer between fraction, mixed number and decimal.</li>
         <li>${kbd('pageSystem')} opens the <b>System solver</b> and ${kbd('pageSimplify')} <b>Simplify / factor</b>; ${kbd('pageMain')} comes back here.</li>
         <li>Change any key in the <b>Keybinds</b> tab.</li>
@@ -4114,7 +4544,7 @@ function renderSteps(res) {
   }
   let h = `<div class="legend">Order:
     <span class="tag t-paren">( )</span> first <span class="arrow">→</span>
-    <span class="tag t-trig">sin</span> <span class="tag t-pow">xⁿ √</span> <span class="arrow">→</span>
+    <span class="tag t-trig">sin</span> <span class="tag t-log">log</span> <span class="tag t-pow">xⁿ √</span> <span class="arrow">→</span>
     <span class="tag t-md">× ÷</span> left to right <span class="arrow">→</span>
     <span class="tag t-as">+ −</span> left to right</div>`;
   if (res.lines.length) {
@@ -4207,6 +4637,12 @@ function renderSimpResult(r) {
   altEl.innerHTML = '';
   resultEl.innerHTML = '';
   if (!r || r.error) return;
+  if (r.identity !== undefined) {
+    resultEl.classList.add('multi');
+    resultEl.innerHTML = `<span>${r.identity ? '✓ an identity' : '✗ not an identity'}</span>`;
+    altEl.innerHTML = r.identity ? 'true for every value where both sides make sense' : r.counter || '';
+    return;
+  }
   resultEl.innerHTML = `<span class="eqsign">=</span><span>${r.simp}</span>`;
   altEl.innerHTML = r.fact ? `<span class="altnote">factored: <b>${r.fact}</b></span>` : rxIsConst(r.value) ? '' : '<span class="altnote">doesn’t factor any further</span>';
 }
@@ -4220,19 +4656,105 @@ function renderSimpSteps(r) {
         <li>Every letter key types its letter: <i class="xv">a</i>, <i class="xv">b</i>, <i class="xv">x</i>, <i class="xv">y</i>…</li>
         <li>Spell a function to get it, as slowly as you like: s i n is sin( ). Also cos, tan, csc, sec, cot, arcsin, arccos, arctan, sqrt for ${rootHTML('&nbsp;')} and pi for π.</li>
         <li>${kbd('pow')} for powers, ${kbd('frac')} for a fraction, ${kbd('next')} to step out of a box.</li>
-        <li>Fractions cancel: ${fr(`${XV}<sup class="sup">2</sup> − 1`, `${XV} − 1`)} = ${XV} + 1. And sin² + cos² = 1.</li>
+        <li>Fractions cancel: ${fr(`${XV}<sup class="sup">2</sup> − 1`, `${XV} − 1`)} = ${XV} + 1.</li>
+        <li>Trig gets every identity: sum and difference, double and triple angle, half angle, product-to-sum, sin² + cos² = 1. Type ${kbd('equals')} between two sides to check an identity, or open the <b>Trig</b> tab for the full list with a Try button on each.</li>
         <li>${kbd('pageMain')} goes back to the calculator · ${kbd('pageSystem')} opens the System solver.</li>
       </ul></div>`;
     return;
   }
   if (r.error) { el.innerHTML = '<p class="msg"></p>'; el.querySelector('.msg').textContent = `Keep going… (${r.error})`; return; }
+  if (r.identity !== undefined) {
+    el.innerHTML = stepList(r.lines, false) + `<section class="extra"><h4>Verdict</h4><p class="sys-ans">${r.identity
+      ? '<b>✓ It’s an identity:</b> both sides are equal for every value where they’re defined.'
+      : `<b>✗ Not an identity:</b> ${r.counter || 'the two sides aren’t always equal'}.`}</p></section>`;
+    return;
+  }
   let h = stepList(r.lines, true);
   if (r.lines.length === 1) h += '<p class="msg">That’s already as simple as it gets.</p>';
-  h += '<section class="extra"><h4>Results</h4>' + formRow('Simplified', r.simp)
+  h += '<section class="extra"><h4>Results</h4>' + formRow('Simplified', r.simp) + (r.forms || []).map(([n, f]) => formRow(n, f)).join('')
     + (r.gcf && r.gcf !== r.fact ? formRow('Common factor out', r.gcf) : '')
     + formRow('Factored', r.fact || (rxIsConst(r.value) ? r.simp : 'Doesn’t factor any further'), r.fact || rxIsConst(r.value) ? '' : ' none') + '</section>';
   el.innerHTML = h;
 }
+// ---------- the Trig tab: every identity, each one checkable on Simplify / factor ----------
+// Formulas are written in a tiny shorthand and turned into editor items: sin{x}, sin^{2}{x} (sin²x), F{top}{bottom},
+// ^{power}, R{root}, P for π, and A90/A180… for angles in the current unit.
+function itemsOf(str) {
+  const deg = S.angle === 'deg';
+  str = str.replace(/A(\d+)/g, (_, d) => (deg ? d : d === '360' ? '2P' : d === '180' ? 'P' : `F{P}{${180 / d}}`));
+  let i = 0;
+  const grp = () => { i++; const o = seq('}'); i++; return o; };
+  function seq(end) {
+    const out = [];
+    while (i < str.length && str[i] !== end) {
+      const fn = ['sin', 'cos', 'tan', 'csc', 'sec', 'cot'].find(f => str.startsWith(f, i) && '{^'.includes(str[i + f.length]));
+      if (fn) {
+        i += fn.length;
+        const pw = str[i] === '^' ? (i++, grp()) : [];
+        out.push({ t: 'fn', name: fn, pw, arg: grp() });
+        continue;
+      }
+      const ch = str[i];
+      if (ch === '^') { i++; out.push({ t: 'pow', exp: grp() }); }
+      else if (ch === 'F') { i++; const num = grp(), den = grp(); out.push({ t: 'frac', num, den }); }
+      else if (ch === 'R') { i++; out.push({ t: 'root', idx: [], rad: grp() }); }
+      else if (ch === 'P') { i++; out.push({ t: 'pi' }); }
+      else if (/[a-z]/.test(ch)) { i++; out.push({ t: 'v', v: ch }); }
+      else { i++; out.push({ t: 'c', v: ch }); }
+    }
+    return out;
+  }
+  return seq(undefined);
+}
+const TH = '<i class="xv">θ</i>', TA = '<i class="xv">a</i>', TB = '<i class="xv">b</i>', TC = '<i class="xv">c</i>';
+const fnT = (n, a, p = '') => `<span class="fnn">${n}</span>${p ? `<sup class="sup">${p}</sup>` : ''} ${a}`;
+const TRIG_REF = [
+  ['Reciprocal and quotient', ['csc{x}=F{1}{sin{x}}', 'sec{x}=F{1}{cos{x}}', 'cot{x}=F{1}{tan{x}}', 'tan{x}=F{sin{x}}{cos{x}}', 'cot{x}=F{cos{x}}{sin{x}}']],
+  ['Pythagorean', ['sin^{2}{x}+cos^{2}{x}=1', '1+tan^{2}{x}=sec^{2}{x}', '1+cot^{2}{x}=csc^{2}{x}']],
+  ['Even and odd', ['sin{-x}=-sin{x}', 'cos{-x}=cos{x}', 'tan{-x}=-tan{x}']],
+  ['Cofunction', ['sin{A90-x}=cos{x}', 'cos{A90-x}=sin{x}', 'tan{A90-x}=cot{x}']],
+  ['Shifts and periods', ['sin{x+A360}=sin{x}', 'cos{x+A360}=cos{x}', 'tan{x+A180}=tan{x}', 'sin{A180-x}=sin{x}', 'cos{A180-x}=-cos{x}', 'sin{x+A90}=cos{x}']],
+  ['Sum and difference', ['sin{a+b}=sin{a}cos{b}+cos{a}sin{b}', 'sin{a-b}=sin{a}cos{b}-cos{a}sin{b}', 'cos{a+b}=cos{a}cos{b}-sin{a}sin{b}',
+    'cos{a-b}=cos{a}cos{b}+sin{a}sin{b}', 'tan{a+b}=F{tan{a}+tan{b}}{1-tan{a}tan{b}}', 'tan{a-b}=F{tan{a}-tan{b}}{1+tan{a}tan{b}}']],
+  ['Double angle', ['sin{2x}=2sin{x}cos{x}', 'cos{2x}=cos^{2}{x}-sin^{2}{x}', 'cos{2x}=2cos^{2}{x}-1', 'cos{2x}=1-2sin^{2}{x}', 'tan{2x}=F{2tan{x}}{1-tan^{2}{x}}']],
+  ['Triple angle', ['sin{3x}=3sin{x}-4sin^{3}{x}', 'cos{3x}=4cos^{3}{x}-3cos{x}', 'tan{3x}=F{3tan{x}-tan^{3}{x}}{1-3tan^{2}{x}}']],
+  ['Half angle', [() => `${fnT('sin', `(${fr(TH, '2')})`)} = ±${rootHTML(fr(`1 − ${fnT('cos', TH)}`, '2'))}`, () => `${fnT('cos', `(${fr(TH, '2')})`)} = ±${rootHTML(fr(`1 + ${fnT('cos', TH)}`, '2'))}`,
+    'sin^{2}{F{x}{2}}=F{1-cos{x}}{2}', 'cos^{2}{F{x}{2}}=F{1+cos{x}}{2}', 'tan{F{x}{2}}=F{1-cos{x}}{sin{x}}', 'tan{F{x}{2}}=F{sin{x}}{1+cos{x}}']],
+  ['Power reducing', ['sin^{2}{x}=F{1-cos{2x}}{2}', 'cos^{2}{x}=F{1+cos{2x}}{2}', 'tan^{2}{x}=F{1-cos{2x}}{1+cos{2x}}', 'sin^{3}{x}=F{3sin{x}-sin{3x}}{4}', 'cos^{3}{x}=F{3cos{x}+cos{3x}}{4}']],
+  ['Product to sum', ['sin{a}sin{b}=F{cos{a-b}-cos{a+b}}{2}', 'cos{a}cos{b}=F{cos{a-b}+cos{a+b}}{2}', 'sin{a}cos{b}=F{sin{a+b}+sin{a-b}}{2}', 'cos{a}sin{b}=F{sin{a+b}-sin{a-b}}{2}']],
+  ['Sum to product', ['sin{a}+sin{b}=2sin{F{a+b}{2}}cos{F{a-b}{2}}', 'sin{a}-sin{b}=2cos{F{a+b}{2}}sin{F{a-b}{2}}',
+    'cos{a}+cos{b}=2cos{F{a+b}{2}}cos{F{a-b}{2}}', 'cos{a}-cos{b}=-2sin{F{a+b}{2}}sin{F{a-b}{2}}']],
+  ['Tangent half-angle (t = tan ½x)', ['sin{x}=F{2tan{F{x}{2}}}{1+tan^{2}{F{x}{2}}}', 'cos{x}=F{1-tan^{2}{F{x}{2}}}{1+tan^{2}{F{x}{2}}}', 'tan{x}=F{2tan{F{x}{2}}}{1-tan^{2}{F{x}{2}}}']],
+  ['Combining sin and cos', [() => `${TA} ${fnT('sin', TH)} + ${TB} ${fnT('cos', TH)} = <i class="xv">R</i> ${fnT('sin', `(${TH} + <i class="xv">α</i>)`)}, &ensp;<i class="xv">R</i> = ${rootHTML(`${TA}<sup class="sup">2</sup> + ${TB}<sup class="sup">2</sup>`)}, &ensp;${fnT('tan', '<i class="xv">α</i>')} = ${fr(TB, TA)}`,
+    'sin{x}+cos{x}=R{2}sin{x+A45}', 'sin{x}-cos{x}=R{2}sin{x-A45}']],
+  ['Triangles (sides a, b, c opposite angles A, B, C)', [
+    () => `${fr(TA, fnT('sin', '<i class="xv">A</i>'))} = ${fr(TB, fnT('sin', '<i class="xv">B</i>'))} = ${fr(TC, fnT('sin', '<i class="xv">C</i>'))} &ensp;<small>law of sines</small>`,
+    () => `${TC}<sup class="sup">2</sup> = ${TA}<sup class="sup">2</sup> + ${TB}<sup class="sup">2</sup> − 2${TA}${TB} ${fnT('cos', '<i class="xv">C</i>')} &ensp;<small>law of cosines</small>`,
+    () => `Area = ${fr('1', '2')}${TA}${TB} ${fnT('sin', '<i class="xv">C</i>')}`]],
+  ['With imaginary numbers', [() => `<i class="xv">e</i><sup class="sup"><i class="xv">i</i>${TH}</sup> = ${fnT('cos', TH)} + <i class="xv">i</i> ${fnT('sin', TH)} &ensp;<small>Euler</small>`,
+    () => `(${fnT('cos', TH)} + <i class="xv">i</i> ${fnT('sin', TH)})<sup class="sup"><i class="xv">n</i></sup> = ${fnT('cos', `<i class="xv">n</i>${TH}`)} + <i class="xv">i</i> ${fnT('sin', `<i class="xv">n</i>${TH}`)} &ensp;<small>de Moivre</small>`]],
+];
+function renderTrigRef() {
+  const el = $('#panel-trig');
+  if (S.tab !== 'trig') return;
+  E = { view: S.view, ans: S.ans, angle: S.angle };
+  const vals = [0, 30, 45, 60, 90].map(d => [d, ...['sin', 'cos', 'tan'].map(n => { try { return valueHTML(trigV(n, S.angle === 'deg' ? Q(BigInt(d)) : d ? mkPi(Q(1n, BigInt(180 / d))) : Q(0n)), 'frac'); } catch { return '—'; } })]);
+  let h = `<p class="msg" style="margin:0">Every formula here can be checked: <b>Try</b> puts it on the Simplify / factor page, which proves it step by step. Angles are in ${S.angle === 'deg' ? 'degrees' : 'radians'} (switch with ${kbd('angle')}).</p>`;
+  h += `<div class="kb-group"><h3>Exact values</h3><table class="tv"><tr><th></th>${vals.map(([d]) => `<th>${S.angle === 'deg' ? d + '°' : d ? piText(Q(1n, BigInt(180 / d))) : '0'}</th>`).join('')}</tr>`
+    + ['sin', 'cos', 'tan'].map((n, k) => `<tr><th>${n}</th>${vals.map(v => `<td>${v[k + 1]}</td>`).join('')}</tr>`).join('') + '</table></div>';
+  TRIG_REF.forEach(([title, rows], g) => {
+    h += `<div class="kb-group"><h3>${title}</h3>`;
+    rows.forEach((row, r) => {
+      let eq;
+      if (typeof row === 'function') eq = row();
+      else { const items = itemsOf(row), at = items.findIndex(isEqSign); eq = `${pr(parseArr(items.slice(0, at)))} = ${pr(parseArr(items.slice(at + 1)))}`; }
+      h += `<div class="id-row"><span class="id-eq">${eq}</span>${typeof row === 'string' ? `<button type="button" class="textbtn" data-try="${g}.${r}">Try</button>` : ''}</div>`;
+    });
+    h += '</div>';
+  });
+  el.innerHTML = h;
+}
+
 function renderPages() {
   for (const b of document.querySelectorAll('[data-page]')) {
     b.setAttribute('aria-pressed', b.dataset.page === S.page);
@@ -4284,6 +4806,7 @@ function renderPad() {
     return `<button type="button" class="k ${a.cls} ${extra}" data-act="${id}" aria-label="${a.name}">${label}${k ? `<span class="kb">${escapeHTML(keyBadge(k))}</span>` : ''}</button>`;
   };
   $('#sci').innerHTML = SCI[S.page].map(id => btn(id)).join('');
+  $('#sci').style.gridTemplateColumns = `repeat(${S.page === 'main' ? 6 : 7}, minmax(0, 1fr))`;
   padEl.innerHTML = PAD.flat().map(id => (id === 'NAV'
     ? `<div class="navpad">${['up', 'left', 'right', 'down'].map(n => btn(n)).join('')}</div>`
     : btn(id))).join('');
@@ -4339,6 +4862,7 @@ function render() {
   renderPad();
   renderSeq();
   renderTabs();
+  renderTrigRef();
   renderGraph(res);
 }
 
@@ -4377,6 +4901,8 @@ function evalF(n, x) {
     case 'x': return x;
     case 'y': case 'v': return NaN;
     case 'pi': return Math.PI;
+    case 'e': return Math.E;
+    case 'i': return NaN;
     case 'ans': return !S.ans ? NaN : isAlg(S.ans) ? evalAlg(S.ans, x) : toF(S.ans);
     case 'neg': return -evalF(n.a, x);
     case 'grp': return evalF(n.a, x);
@@ -4388,6 +4914,8 @@ function evalF(n, x) {
     case 'root': { const k = n.b ? evalF(n.b, x) : 2, a = evalF(n.a, x); return a < 0 && k % 2 === 1 ? -Math.pow(-a, 1 / k) : Math.pow(a, 1 / k); }
     case 'fn': {
       const a = evalF(n.a, x), deg = S.angle === 'deg', r = deg ? a * Math.PI / 180 : a;
+      if (n.name === 'ln') return Math.log(a);
+      if (n.name === 'log') return Math.log(a) / Math.log(n.b ? evalF(n.b, x) : 10);
       const inv = { asin: Math.asin, acos: Math.acos, atan: Math.atan }[n.name];
       if (inv) return inv(a) * (deg ? 180 / Math.PI : 1);
       const sn = Math.sin(r), cs = Math.cos(r);
@@ -4899,6 +5427,17 @@ $('#panel-history').addEventListener('click', e => {
   S.root = structuredClone(S.history[+b.dataset.hist].items);
   S.cur = { path: [], i: S.root.length };
   edited();
+  render();
+});
+
+$('#panel-trig').addEventListener('click', e => {
+  const b = e.target.closest('[data-try]');
+  if (!b) return;
+  const [g, r] = b.dataset.try.split('.').map(Number);
+  setPage('simplify');
+  S.root = itemsOf(TRIG_REF[g][1][r]);
+  S.cur = { path: [], i: S.root.length };
+  S.tab = 'steps';
   render();
 });
 
