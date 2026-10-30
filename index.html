@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fraction Calculator</title>
+<title>Calculator</title>
 <meta name="description" content="A student calculator with exact fractions, order-of-operations steps, and fully remappable keyboard shortcuts.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a4bb8'/%3E%3Ctext x='16' y='14' font-family='sans-serif' font-size='11' font-weight='700' fill='white' text-anchor='middle'%3E1%3C/text%3E%3Crect x='9' y='16' width='14' height='2' fill='white'/%3E%3Ctext x='16' y='28' font-family='sans-serif' font-size='11' font-weight='700' fill='white' text-anchor='middle'%3E2%3C/text%3E%3C/svg%3E">
 <style>
@@ -99,6 +99,7 @@ kbd {
 
 /* ---------- display ---------- */
 .display {
+  position: relative;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -176,6 +177,9 @@ kbd {
   display: inline-flex; align-items: center; justify-content: center; padding: 0 .08em;
 }
 .slot.empty.on { border-color: var(--accent); opacity: 1; }
+/* Repeating digits typed with \ : the bar sits over the box. */
+.repw > .slot { vertical-align: baseline; border-top: .06em solid currentColor; line-height: 1.05; }
+.repw > .slot.empty { border-top-style: solid; }
 .cur {
   display: inline-block; width: 2px; height: 1.05em; margin: 0 -1px;
   background: var(--accent); vertical-align: middle; border-radius: 1px;
@@ -183,6 +187,13 @@ kbd {
 }
 @keyframes blink { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .cur { animation: none; } }
+
+/* A key that does nothing on its own ([) is waiting for the rest of its shortcut: the display glows. */
+.display { transition: border-color .15s, box-shadow .15s; }
+.display.seq-wait {
+  border-color: color-mix(in srgb, var(--err) 55%, var(--line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 14%, transparent), 0 0 22px color-mix(in srgb, var(--err) 22%, transparent);
+}
 
 /* ---------- keypad ---------- */
 .pad { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
@@ -349,7 +360,7 @@ kbd {
 <body>
 <div class="app" id="app">
   <header class="top">
-    <h1>Fraction Calculator</h1>
+    <h1>Calculator</h1>
     <p>Exact answers, order of operations shown step by step, and keys you can remap.</p>
   </header>
 
@@ -1419,13 +1430,19 @@ const isDigitCh = it => it && it.t === 'c' && /[0-9.]/.test(it.v);
 // style: null (plain rational), 'dec' (typed/kept as a decimal), 'mixed', or 'irr' (surd / approximation)
 // unit: '°' on angles that arcsin & co. give back in degree mode
 const num = (v, o = {}) => (isQ(v)
-  ? { k: 'num', v, raw: o.raw || v, style: o.style || null, fresh: !!o.fresh, text: o.text, unit: o.unit }
+  ? { k: 'num', v, raw: o.raw || v, style: o.style || null, rep: !!o.rep, fresh: !!o.fresh, text: o.text, unit: o.unit }
   : { k: 'num', v, raw: null, style: 'irr', fresh: false, unit: o.unit });
 
-function numFromText(s) {
+function numFromText(s, r) {
   if ((s.match(/\./g) || []).length > 1) throw new CalcError(`“${s}” has more than one decimal point.`);
-  if (s === '.') throw new CalcError('A decimal point needs a digit next to it.');
+  if (s === '.' && r == null) throw new CalcError('A decimal point needs a digit next to it.');
   const [ip, fp = ''] = s.split('.');
+  // 0.1(6): 0.1666… = (0166 − 01) / 900
+  if (r != null) {
+    const head = BigInt((ip || '0') + fp), all = BigInt((ip || '0') + fp + r);
+    const raw = { n: all - head, d: 10n ** BigInt(fp.length) * (10n ** BigInt(r.length) - 1n) };
+    return num(Q(raw.n, raw.d), { raw, style: 'dec', rep: true, text: `${ip || '0'}.${fp}<span class="rep">${r}</span>` });
+  }
   if (!fp) return num(Q(BigInt(ip || '0')));
   const raw = { n: BigInt((ip || '0') + fp), d: 10n ** BigInt(fp.length) };
   return num(Q(raw.n, raw.d), { raw, style: 'dec', text: (ip || '0') + '.' + fp });
@@ -1440,11 +1457,19 @@ function tokenize(arr) {
   const out = [];
   for (let i = 0; i < arr.length; i++) {
     const it = arr[i];
-    if (isDigitCh(it)) {
+    if (isDigitCh(it) || it.t === 'rep') {
       let s = '';
       while (isDigitCh(arr[i])) s += arr[i++].v;
-      i--;
-      out.push({ k: 'num', s });
+      // A repeating block after the digits (0.1\6 → 0.1666…); "1\3" means 1.333…
+      if (arr[i] && arr[i].t === 'rep') {
+        const r = arr[i].rep;
+        if (!r.length) throw new CalcError('There’s an empty repeating box — type the digits that repeat.');
+        if (!r.every(d => d.t === 'c' && /[0-9]/.test(d.v))) throw new CalcError('Only digits can repeat.');
+        out.push({ k: 'num', s: s.includes('.') ? s : s + '.', r: r.map(d => d.v).join('') });
+      } else {
+        i--;
+        out.push({ k: 'num', s });
+      }
     } else if (it.t === 'c') {
       out.push(it.v === '(' || it.v === ')' ? { k: it.v } : { k: 'op', v: it.v });
     } else if (it.t === 'ans') {
@@ -1529,7 +1554,7 @@ function parseArr(arr) {
     }
     p++;
     switch (tk.k) {
-      case 'num': return numFromText(tk.s);
+      case 'num': return numFromText(tk.s, tk.r);
       case 'ans': return { k: 'ans' };
       case 'frac': return { k: 'frac', a: tk.a, b: tk.b };
       case 'mixed': return { k: 'mixed', w: tk.w, a: tk.a, b: tk.b };
@@ -1567,7 +1592,7 @@ let E = { view: 'frac', ans: null };
 
 const isNum = n => n.k === 'num';
 const isInt = x => x.style === null && x.raw.d === 1n;
-const decish = x => x.style === 'dec' || isInt(x);
+const decish = x => (x.style === 'dec' && !x.rep) || isInt(x);
 const isNeg = x => x.k === 'neg' || (isNum(x) && signV(x.v) < 0);
 
 function negNum(x) {
@@ -1681,7 +1706,7 @@ function subAction(bin) {
   if (conv.length) {
     const notes = [];
     if (conv.some(x => x.style === 'mixed')) notes.push('Change mixed numbers to improper fractions');
-    if (conv.some(x => x.style === 'dec')) notes.push('Write decimals as fractions');
+    if (conv.some(x => x.style === 'dec')) notes.push(conv.every(x => x.style !== 'dec' || x.rep) ? 'Write repeating decimals as fractions' : 'Write decimals as fractions');
     return { kind: 'convert', note: notes.join(' · '), tag: 'frac' };
   }
   if ((op === '+' || op === '-') && a.raw.d !== b.raw.d && a.v.n !== 0n && b.v.n !== 0n) {
@@ -1866,7 +1891,7 @@ function apply(act) {
     case 'simplify': return { ...n, raw: n.v, fresh: false };
     case 'convert': {
       const cv = x => (x && (x.style === 'mixed' || (x.style === 'dec' && n.k === 'bin'))
-        ? { ...x, style: null, text: undefined, fresh: x.style === 'dec' } : x);
+        ? { ...x, style: null, rep: false, text: undefined, fresh: x.style === 'dec' } : x);
       return { ...n, a: cv(n.a), b: cv(n.b) };
     }
     case 'lcd': {
@@ -2012,7 +2037,7 @@ const $ = s => document.querySelector(s);
 const exprEl = $('#expr'), resultEl = $('#result'), altEl = $('#alt'), hintEl = $('#hint');
 const ansLineEl = $('#ansLine'), padEl = $('#pad'), toastEl = $('#toast');
 
-const SLOTS = { frac: ['num', 'den'], mixed: ['whole', 'num', 'den'], pow: ['exp'], root: ['idx', 'rad'], fn: ['pw', 'arg'] };
+const SLOTS = { frac: ['num', 'den'], mixed: ['whole', 'num', 'den'], pow: ['exp'], root: ['idx', 'rad'], fn: ['pw', 'arg'], rep: ['rep'] };
 const isTpl = it => !!it && Object.hasOwn(SLOTS, it.t);
 const tplEmpty = it => SLOTS[it.t].every(s => it[s].length === 0);
 // Moving right into a root skips its (usually empty, hidden) index box.
@@ -2061,7 +2086,7 @@ function edited() { S.afterEval = false; S.committed = null; }
 // "1 f 3 × 2" should mean (1/3) × 2, "2 ^ 3 + 1" 2³ + 1 and "sin 30 + 1" sin(30°) + 1: an operator
 // after a plain number in a denominator, exponent, root or function steps out of the box.
 // Type ( first for more.
-const AUTO_EXIT_SLOTS = new Set(['den', 'exp', 'rad', 'arg']);
+const AUTO_EXIT_SLOTS = new Set(['den', 'exp', 'rad', 'arg', 'rep']);
 function exitSimpleBox(slots = AUTO_EXIT_SLOTS) {
   const p = S.cur.path.at(-1), arr = curArr();
   if (p && slots.has(p.slot) && S.cur.i === arr.length && arr.length && arr.every(isDigitCh)) moveRight();
@@ -2072,6 +2097,15 @@ function typeChar(v, isOp) {
   if (S.autoExit && (isOp || v === ')')) exitSimpleBox();
   curArr().splice(S.cur.i, 0, { t: 'c', v });
   S.cur.i++;
+  edited();
+}
+// \ : the digits typed next repeat forever (0.\9 0 = 0.909090…).
+function typeRepeat() {
+  startTyping(false);
+  if (S.cur.path.some(p => p.slot === 'rep')) return;
+  curArr().splice(S.cur.i, 0, { t: 'rep', rep: [] });
+  S.cur.path.push({ idx: S.cur.i, slot: 'rep' });
+  S.cur.i = 0;
   edited();
 }
 function typeX() {
@@ -2206,7 +2240,7 @@ function insertTpl(kind) {
       }
     } else if (prev && prev.t === 'ans') j--;
     // 3, 0.5, 2π, √3, 3², sin(30°)
-    else while (isDigitCh(arr[j - 1]) || (arr[j - 1] && ['pi', 'x', 'root', 'pow', 'fn'].includes(arr[j - 1].t))) j--;
+    else while (isDigitCh(arr[j - 1]) || (arr[j - 1] && ['pi', 'x', 'root', 'pow', 'fn', 'rep'].includes(arr[j - 1].t))) j--;
   } else {
     let k = j;
     while (isDigitCh(arr[k - 1])) k--;
@@ -2422,6 +2456,7 @@ for (const [fn, name] of Object.entries(TRIG_NAMES)) action(fn, `${name} (${FN_L
 action('pi', 'Pi (π)', 'Trigonometry', typePi, 'π');
 action('angle', 'Degrees ⇄ radians', 'Trigonometry', toggleAngle, '');
 action('xvar', 'Variable x', 'Algebra & graphs', typeX, '<i class="xv">x</i>');
+action('repeat', 'Repeating digits (0.3̅)', 'Numbers', typeRepeat, '<span>0.<span class="rep">3</span></span>');
 action('graph', 'Graph mode: f(x) = …', 'Algebra & graphs', toggleGraph, '');
 action('clearGraphs', 'Erase all graphs', 'Algebra & graphs', clearGraphs, '');
 action('frac', 'New fraction', 'Fractions', () => insertTpl('frac'), ICON_FRAC);
@@ -2440,15 +2475,15 @@ action('down', 'Down (bottom of a fraction; next function when graphing)', 'Move
 
 const DEFAULT_KEYS = {
   d0: ['0'], d1: ['1'], d2: ['2'], d3: ['3'], d4: ['4'], d5: ['5'], d6: ['6'], d7: ['7'], d8: ['8'], d9: ['9'],
-  dot: ['.'], add: ['+', '[ ='], sub: ['-'], mul: ['*', '[ 8'], div: ['/'], lparen: ['('], rparen: [')'],
-  pow: ['^', '[ 6'], root: ['r'], frac: ['f', '[ 0'],
+  dot: ['.'], repeat: ['\\'], add: ['+', '[ ='], sub: ['-'], mul: ['*', '[ 8'], div: ['/'], lparen: ['('], rparen: [')'],
+  pow: ['^', '[ 6'], root: ['r'], frac: ['f', '[ 0', '[ /'],
   sin: ['s'], cos: ['c'], tan: ['t'], csc: ['c s'], sec: ['s e'], cot: ['c t'],
   asin: ['a s'], acos: ['a c'], atan: ['a t'], pi: ['p'], angle: ['d'], xvar: ['x'], graph: ['x g'], clearGraphs: ['p z'], mixed: ['m'], view: ['v'], eq: ['q', '='], next: ['Enter'], ans: ['a'],
   back: ['Backspace'], del: ['Delete'], clear: ['Escape'],
   left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'],
 };
 
-const SCI = ['sin', 'cos', 'tan', 'csc', 'sec', 'cot', 'pi', 'asin', 'acos', 'atan', 'angle', 'xvar', 'graph'];
+const SCI = ['sin', 'cos', 'tan', 'csc', 'sec', 'cot', 'pi', 'asin', 'acos', 'atan', 'angle', 'xvar', 'repeat', 'graph'];
 // NAV is a d-pad spanning three rows in the first column.
 const PAD = [
   ['view', 'pow', 'root', 'back', 'clear'],
@@ -2519,7 +2554,7 @@ function validItems(arr) {
 }
 function save() {
   store.set({
-    keymapVersion: 7, pins: S.pins, fx: S.fx, view: S.view, angle: S.angle, hints: S.hints, autoExit: S.autoExit, tab: S.tab, keys: S.keys, ans: enV(S.ans),
+    keymapVersion: 8, pins: S.pins, fx: S.fx, view: S.view, angle: S.angle, hints: S.hints, autoExit: S.autoExit, tab: S.tab, keys: S.keys, ans: enV(S.ans),
     history: S.history.map(h => ({ items: h.items, v: enV(h.v), unit: h.unit })),
   });
 }
@@ -2553,6 +2588,8 @@ function load() {
   }
   // v7 added [ 6 for ^.
   if ((s.keymapVersion || 1) < 7 && !keyOwner('[ 6')) S.keys.pow.push('[ 6');
+  // v8 added [ / for fractions.
+  if ((s.keymapVersion || 1) < 8 && !keyOwner('[ /')) S.keys.frac.push('[ /');
   try { if (s.ans) S.ans = deV(s.ans); } catch {}
   if (Array.isArray(s.history)) {
     for (const h of s.history) {
@@ -2603,6 +2640,8 @@ function edArr(arr, path, isRoot, live) {
       const sub = slot => edArr(it[slot], [...path, { idx: i, slot }], false, live);
       if (it.t === 'pow') {
         s += `<span class="sup"${at(i)}>${sub('exp')}</span>`;
+      } else if (it.t === 'rep') {
+        s += `<span class="repw"${at(i)}>${sub('rep')}</span>`;
       } else if (it.t === 'root') {
         // The index box only shows once it's used (or the cursor is in it).
         const idxPath = [...path, { idx: i, slot: 'idx' }];
@@ -2647,6 +2686,7 @@ function renderHint() {
   else if (p && p.slot === 'num') h = `Top of the fraction · ${on} to the bottom`;
   else if (p && p.slot === 'den') h = `Bottom of the fraction · ${on}${S.autoExit ? ', or just type the next operator' : ''}`;
   else if (p && p.slot === 'whole') h = `Whole number · ${on} to the fraction part`;
+  else if (p && p.slot === 'rep') h = `Repeating digits — they get the bar and go on forever · ${on}${S.autoExit ? ', or just type the next operator' : ''}`;
   else if (p && p.slot === 'exp') h = `Exponent · ${on}${S.autoExit ? ', or just type the next operator' : ''}`;
   else if (p && p.slot === 'rad') h = `Inside the root · ${on} · ${kbd('up')} adds a small index (3 = cube root)`;
   else if (p && p.slot === 'idx') h = `Root index (3 = cube root) · ${on} to inside the root`;
@@ -2670,6 +2710,10 @@ function seqHint() {
   }
   const now = keyOwner(seq.keys);
   return `${now ? `${A[now].name} · ` : ''}keep typing for ${more.join(', ')}`;
+}
+
+function renderSeq() {
+  $('.display').classList.toggle('seq-wait', !!seq && !keyOwner(seq.keys));
 }
 
 function currentSolve() {
@@ -2807,7 +2851,7 @@ function escapeHTML(s) { return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<':
 function renderPad() {
   const btn = (id, extra = '') => {
     const a = A[id], k = S.keys[id][0];
-    if (id === 'graph') extra += ' wide' + (S.fx ? ' on' : '');
+    if (id === 'graph') extra += S.fx ? ' on' : '';
     const label = id === 'graph' ? `<span class="stack"><b>f(<i class="xv">x</i>)</b><small>${S.fx ? 'graphing' : 'graph'}</small></span>` : id === 'angle' ? `<span class="stack"><b>${S.angle === 'deg' ? 'DEG' : 'RAD'}</b><small>⇄ ${S.angle === 'deg' ? 'rad' : 'deg'}</small></span>` : a.label;
     return `<button type="button" class="k ${a.cls} ${extra}" data-act="${id}" aria-label="${a.name}">${label}${k ? `<span class="kb">${escapeHTML(keyBadge(k))}</span>` : ''}</button>`;
   };
@@ -2838,6 +2882,7 @@ function render() {
   renderHistory();
   renderKeys();
   renderPad();
+  renderSeq();
   renderTabs();
   renderGraph(res);
 }
@@ -3215,7 +3260,7 @@ const snapshot = () => structuredClone({
 function endSeq() { if (seq) clearTimeout(seq.timer); seq = null; }
 function startSeq(keys, snap) {
   endSeq();
-  seq = { keys, snap, timer: setTimeout(() => { seq = null; renderHint(); }, SEQ_MS) };
+  seq = { keys, snap, timer: setTimeout(() => { seq = null; renderHint(); renderSeq(); }, SEQ_MS) };
 }
 
 function pressKeys(k) {
