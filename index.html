@@ -282,6 +282,12 @@ kbd {
 }
 .slot.empty.on { border-color: var(--accent); border-style: solid; opacity: 1; }
 .ch.eqch { margin: 0 .3em; }
+/* 3ex6: the e x after a number shows as a ×10 chip, and the power after it as a raised exponent */
+.ch.sx { font-family: var(--font-num); font-style: normal; font-size: .78em; padding: .08em .22em; margin-left: .08em; background: var(--hl); color: var(--hl-ink); }
+.ch.sx.sx-l { border-radius: .3em 0 0 .3em; padding-right: .06em; }
+.ch.sx.sx-r { border-radius: 0 .3em .3em 0; padding-left: 0; margin-left: 0; }
+.ch.sxe { font-size: .62em; vertical-align: .75em; line-height: 1; }
+.sx-ph { display: inline-block; width: .4em; height: .55em; vertical-align: .9em; margin-left: .06em; border: 1px dashed currentColor; opacity: .45; }
 /* Repeating digits typed with \ : the bar sits over the box. */
 .repw > .slot { vertical-align: baseline; border-top: .06em solid currentColor; line-height: 1.05; }
 .repw > .slot.empty { border-top-style: solid; }
@@ -1804,6 +1810,58 @@ function numFromText(s, r) {
   return num(Q(raw.n, raw.d), { raw, style: 'dec', text: (ip || '0') + '.' + fp });
 }
 
+// "ex" right after a number is scientific notation: 3ex6, 2.5ex-3.
+const isSciAt = (arr, i) => i > 0 && isDigitCh(arr[i - 1]) && arr[i] && arr[i].t === 'e' && arr[i + 1] && arr[i + 1].t === 'x';
+function sciExpEnd(arr, j) { // just past the optional − and digits of the power
+  if (arr[j] && arr[j].t === 'c' && arr[j].v === '-') j++;
+  while (arr[j] && arr[j].t === 'c' && /[0-9]/.test(arr[j].v)) j++;
+  return j;
+}
+function sciExp(arr, i) {
+  if (!isSciAt(arr, i)) return null;
+  const end = sciExpEnd(arr, i + 2), ex = arr.slice(i + 2, end).map(it => it.v).join('');
+  if (!/[0-9]/.test(ex)) throw new CalcError('Add the power of ten after ×10 (3ex6 = 3 × 10⁶).');
+  return { ex, end };
+}
+
+function sciNum(s, ex) {
+  const m = numFromText(s), e = BigInt(ex), p = 10n ** (e < 0n ? -e : e);
+  const v = e < 0n ? Q(m.v.n, m.v.d * p) : Q(m.v.n * p, m.v.d);
+  const mt = m.text || String(m.v.n);
+  return num(v, { raw: v, style: 'dec', text: `${mt} × 10<sup class="sup">${e < 0n ? MINUS : ''}${e < 0n ? -e : e}</sup>` });
+}
+
+// Scientific notation of a real answer, 10 significant digits: 3 × 10⁶, 1.234 × 10⁻⁵
+function sciHTML(v) {
+  let neg, e, digits, exact = false;
+  const P = 10;
+  if (isQ(v)) {
+    if (v.n === 0n) return { html: '0', exact: true };
+    neg = v.n < 0n;
+    const n = abs(v.n), d = v.d;
+    e = String(n).length - String(d).length;
+    if (e >= 0 ? n < d * 10n ** BigInt(e) : n * 10n ** BigInt(-e) < d) e--;
+    const sh = P - 1 - e;
+    const num = sh >= 0 ? n * 10n ** BigInt(sh) : n, den = sh >= 0 ? d : d * 10n ** BigInt(-sh);
+    let q = num / den;
+    exact = num % den === 0n;
+    if ((num % den) * 2n >= den) q++;
+    if (q >= 10n ** BigInt(P)) { q /= 10n; e++; }
+    digits = String(q);
+  } else {
+    const f = toF(v);
+    if (!Number.isFinite(f)) return null;
+    if (f === 0) return { html: '0', exact: exactIn(v, 'dec') };
+    neg = f < 0;
+    const [m, x] = Math.abs(f).toExponential(P - 1).split('e');
+    digits = m.replace('.', '');
+    e = Number(x);
+  }
+  digits = digits.replace(/0+$/, '');
+  const mant = digits[0] + (digits.length > 1 ? '.' + digits.slice(1) : '');
+  return { html: (neg ? MINUS : '') + mant + ` × 10<sup class="sup">${e < 0 ? MINUS : ''}${Math.abs(e)}</sup>`, exact };
+}
+
 function parseSlot(arr, name) {
   if (!arr.length) throw new CalcError(`There’s an empty box — fill in ${name}.`);
   return parseArr(arr);
@@ -1822,6 +1880,11 @@ function tokenize(arr) {
         if (!r.length) throw new CalcError('There’s an empty repeating box — type the digits that repeat.');
         if (!r.every(d => d.t === 'c' && /[0-9]/.test(d.v))) throw new CalcError('Only digits can repeat.');
         out.push({ k: 'num', s: s.includes('.') ? s : s + '.', r: r.map(d => d.v).join('') });
+      } else if (sciExp(arr, i)) {
+        // Scientific notation: 3ex6 = 3 × 10⁶, 2.5ex-3 = 2.5 × 10⁻³
+        const { ex, end } = sciExp(arr, i);
+        i = end - 1;
+        out.push({ k: 'num', s, ex });
       } else {
         i--;
         out.push({ k: 'num', s });
@@ -1918,7 +1981,7 @@ function parseArr(arr) {
     }
     p++;
     switch (tk.k) {
-      case 'num': return numFromText(tk.s, tk.r);
+      case 'num': return tk.ex != null ? sciNum(tk.s, tk.ex) : numFromText(tk.s, tk.r);
       case 'ans': return { k: 'ans' };
       case 'frac': return { k: 'frac', a: tk.a, b: tk.b };
       case 'mixed': return { k: 'mixed', w: tk.w, a: tk.a, b: tk.b };
@@ -3639,6 +3702,7 @@ const S = {
   pageEd: {},         // each page's expression and cursor while another page is open
   sysRows: [[], []],  // System solver: the two equations (the one being typed is also S.root)
   sysRow: 0,
+  sci: false,         // this calculation's answer shown in scientific notation (u)
 };
 
 // ---------- editor ----------
@@ -3656,7 +3720,7 @@ function startTyping(isOp) {
   if (isOp && S.ans) { S.root = [{ t: 'ans' }]; S.cur = { path: [], i: 1 }; }
   else { S.root = []; S.cur = { path: [], i: 0 }; }
 }
-function edited() { S.afterEval = false; S.committed = null; }
+function edited() { S.afterEval = false; S.committed = null; S.sci = false; }
 
 // "1 f 3 × 2" should mean (1/3) × 2, "2 ^ 3 + 1" 2³ + 1 and "sin 30 + 1" sin(30°) + 1: an operator
 // after a plain number in a denominator, exponent, root or function steps out of the box.
@@ -4006,6 +4070,14 @@ function clearAll() {
   S.cur = { path: [], i: 0 };
   S.afterEval = false;
   S.committed = null;
+  S.sci = false;
+}
+
+// Show this calculation's answer in scientific notation (until the expression changes).
+function toggleSci() {
+  if (!S.root.length) return;
+  S.sci = !S.sci;
+  toast(S.sci ? 'Answer in scientific notation' : 'Answer view: ' + VIEW_NAMES[S.view]);
 }
 
 function equals() {
@@ -4137,6 +4209,7 @@ action('graph', 'Graph mode: f(x) = …', 'Algebra & graphs', toggleGraph, '');
 action('clearGraphs', 'Erase all graphs', 'Algebra & graphs', clearGraphs, '');
 action('frac', 'New fraction', 'Fractions', () => insertTpl('frac'), ICON_FRAC);
 action('mixed', 'New mixed number', 'Fractions', () => insertTpl('mixed'), `<i class="box big"></i>${ICON_FRAC}`);
+action('sci', 'Scientific notation for this answer (type 3ex6 for 3 × 10⁶)', 'Fractions', toggleSci, `<span class="stack">×10<sup>n</sup><small>sci</small></span>`);
 action('view', 'Switch answer view', 'Fractions', cycleView, `<span class="stack">⇄<small>view</small></span>`);
 action('eq', 'Save answer (to Ans & history)', 'Calculate', equals, '=', 'eq');
 action('next', 'Next box / close bracket / step out (saves when outside every box)', 'Move cursor', nextBox, `<span class="stack">⏎<small>next</small></span>`);
@@ -4163,7 +4236,7 @@ const DEFAULT_KEYS = {
   dot: ['.'], repeat: ['\\'], add: ['+', '[ ='], sub: ['-'], mul: ['*', '[ 8'], div: ['/'], percent: ['%', '[ 5'], lparen: ['('], rparen: [')'],
   pow: ['^', '[ 6'], root: ['r'], frac: ['f', '[ 0', '[ /'],
   sin: ['s'], cos: ['c'], tan: ['t'], csc: ['c s'], sec: ['s e'], cot: ['c t'],
-  asin: ['a s'], acos: ['a c'], atan: ['a t'], pi: ['p'], angle: ['d'], xvar: ['x'], graph: ['x g'], clearGraphs: ['p z'], mixed: ['m'], view: ['v'], eq: ['q'], equals: ['='], next: ['Enter'], ans: ['a'],
+  asin: ['a s'], acos: ['a c'], atan: ['a t'], pi: ['p'], angle: ['d'], xvar: ['x'], graph: ['x g'], clearGraphs: ['p z'], mixed: ['m'], view: ['v'], sci: ['u'], eq: ['q'], equals: ['='], next: ['Enter'], ans: ['a'],
   back: ['Backspace'], del: ['Delete'], clear: ['Escape'],
   left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'],
   log: ['l'], ln: ['l n'], econst: ['e'], imag: ['i'],
@@ -4324,10 +4397,18 @@ function edArr(arr, path, isRoot, live) {
   if (!arr.length && !isRoot) {
     return `<span class="slot empty${here ? ' on' : ''}"${at(0)}>${here ? CUR : ''}</span>`;
   }
-  let s = '', depth = 0;
+  let s = '', depth = 0, sxEnd = -1;
   arr.forEach((it, i) => {
     if (here && S.cur.i === i) s += CUR;
-    if (it.t === 'c') {
+    if (isSciAt(arr, i)) {
+      sxEnd = sciExpEnd(arr, i + 2);
+      s += `<span class="ch sx sx-l"${at(i)}>×</span>`;
+    } else if (i > 0 && isSciAt(arr, i - 1)) {
+      s += `<span class="ch sx sx-r"${at(i)}>10</span>`;
+      if (sxEnd === i + 1 && !(here && S.cur.i === i + 1)) s += '<span class="sx-ph"></span>';
+    } else if (i < sxEnd) { // the power of ten after ex
+      s += `<span class="ch sxe"${at(i)}>${it.v === '-' ? MINUS : it.v}</span>`;
+    } else if (it.t === 'c') {
       if ('+-*/'.includes(it.v)) {
         const o = opItem(it, arr[i - 1]);
         s += `<span class="${o.cls}"${at(i)}>${o.txt}</span>`;
@@ -4480,8 +4561,9 @@ function renderResult(res) {
     return;
   }
   if (isAlg(res.value)) { renderAlgResult(res); return; }
-  const v = res.value, main = valueHTML(v, S.view) + res.unit;
-  resultEl.innerHTML = `<span class="eqsign">${eqSign(v, S.view)}</span><span>${main}</span>`; // own span: flex would flatten a ²
+  const v = res.value, sci = S.sci && !isCx(v) ? sciHTML(v) : null;
+  const main = (sci ? sci.html : valueHTML(v, S.view)) + res.unit;
+  resultEl.innerHTML = `<span class="eqsign">${sci ? (sci.exact ? '=' : '≈') : eqSign(v, S.view)}</span><span>${main}</span>`; // own span: flex would flatten a ²
   const seen = new Set([main]), alts = [];
   for (const view of VIEWS) {
     const h = valueHTML(v, view) + res.unit;
